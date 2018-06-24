@@ -9,3 +9,10 @@
     name: 'App',
   };
 </script>
+
+<style lang="css">
+body {
+	background: #dedede;
+	margin: 0;
+}
+</style>

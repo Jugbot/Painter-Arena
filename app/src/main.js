@@ -15,6 +15,9 @@ Vue.mixin({ //globals
       user: {
         username: 'username',
         password: 'password'
+      },
+      http: {
+        root: 'http://127.0.0.1:5000/'
       }
     }
   }

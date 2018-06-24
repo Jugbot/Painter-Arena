@@ -1,121 +1,13 @@
+import $ from 'jquery'
+import SimpleUndo from './controls/simpleundo.js'
+
 /* drawingboard.js v0.4.6 - https://github.com/Leimi/drawingboard.js
 * Copyright (c) 2015 Emmanuel Pelletier
 * Licensed MIT */
-(function() {
-	
-'use strict';
-
-/**
- * SimpleUndo is a very basic javascript undo/redo stack for managing histories of basically anything.
- * 
- * options are: {
- * 	* `provider` : required. a function to call on `save`, which should provide the current state of the historized object through the given "done" callback
- * 	* `maxLength` : the maximum number of items in history
- * 	* `opUpdate` : a function to call to notify of changes in history. Will be called on `save`, `undo`, `redo` and `clear`
- * }
- * 
- */
-var SimpleUndo = function(options) {
-	
-	var settings = options ? options : {};
-	var defaultOptions = {
-		provider: function() {
-			throw new Error("No provider!");
-		},
-		maxLength: 30,
-		onUpdate: function() {}
-	};
-	
-	this.provider = (typeof settings.provider != 'undefined') ? settings.provider : defaultOptions.provider;
-	this.maxLength = (typeof settings.maxLength != 'undefined') ? settings.maxLength : defaultOptions.maxLength;
-	this.onUpdate = (typeof settings.onUpdate != 'undefined') ? settings.onUpdate : defaultOptions.onUpdate;
-	
-	this.initialItem = null;
-	this.clear();
-};
-
-function truncate (stack, limit) {
-	while (stack.length > limit) {
-		stack.shift();
-	}
-}
-
-SimpleUndo.prototype.initialize = function(initialItem) {
-	this.stack[0] = initialItem;
-	this.initialItem = initialItem;
-};
-
-
-SimpleUndo.prototype.clear = function() {
-	this.stack = [this.initialItem];
-	this.position = 0;
-	this.onUpdate();
-};
-
-SimpleUndo.prototype.save = function() {
-	this.provider(function(current) {
-		truncate(this.stack, this.maxLength);
-		this.position = Math.min(this.position,this.stack.length - 1);
-		
-		this.stack = this.stack.slice(0, this.position + 1);
-		this.stack.push(current);
-		this.position++;
-		this.onUpdate();
-	}.bind(this));
-};
-
-SimpleUndo.prototype.undo = function(callback) {
-	if (this.canUndo()) {
-		var item =  this.stack[--this.position];
-		this.onUpdate();
-		
-		if (callback) {
-			callback(item);
-		}
-	}
-};
-
-SimpleUndo.prototype.redo = function(callback) {
-	if (this.canRedo()) {
-		var item = this.stack[++this.position];
-		this.onUpdate();
-		
-		if (callback) {
-			callback(item);
-		}
-	}
-};
-
-SimpleUndo.prototype.canUndo = function() {
-	return this.position > 0;
-};
-
-SimpleUndo.prototype.canRedo = function() {
-	return this.position < this.count();
-};
-
-SimpleUndo.prototype.count = function() {
-	return this.stack.length - 1; // -1 because of initial item
-};
 
 
 
-
-
-//exports
-// node module
-if (typeof module != 'undefined') {
-	module.exports = SimpleUndo;
-}
-
-// browser global
-if (typeof window != 'undefined') {
-	window.SimpleUndo = SimpleUndo;
-}
-
-})();
 window.DrawingBoard = typeof DrawingBoard !== "undefined" ? DrawingBoard : {};
-
 
 DrawingBoard.Utils = {};
 
@@ -511,8 +403,9 @@ DrawingBoard.Board.prototype = {
 		if (!this.opts.controls.length || !DrawingBoard.Control) return false;
 		for (var i = 0; i < this.opts.controls.length; i++) {
 			var c = null;
-			if (typeof this.opts.controls[i] == "string")
+			if (typeof this.opts.controls[i] == "string") {
 				c = new window['DrawingBoard']['Control'][this.opts.controls[i]](this);
+			}
 			else if (typeof this.opts.controls[i] == "object") {
 				for (var controlName in this.opts.controls[i]) break;
 				c = new window['DrawingBoard']['Control'][controlName](this, this.opts.controls[i][controlName]);
@@ -969,3 +862,408 @@ DrawingBoard.Board.prototype = {
 		};
 	}
 };
+
+DrawingBoard.Control = function(drawingBoard, opts) {
+	this.board = drawingBoard;
+	this.opts = $.extend({}, this.defaults, opts);
+
+	this.$el = $(document.createElement('div')).addClass('drawing-board-control');
+	if (this.name)
+		this.$el.addClass('drawing-board-control-' + this.name);
+
+	this.board.ev.bind('board:reset', $.proxy(this.onBoardReset, this));
+
+	this.initialize.apply(this, arguments);
+	return this;
+};
+
+DrawingBoard.Control.prototype = {
+
+	name: '',
+
+	defaults: {},
+
+	initialize: function() {
+
+	},
+
+	addToBoard: function() {
+		this.board.addControl(this);
+	},
+
+	onBoardReset: function(opts) {
+
+	}
+
+};
+
+//extend directly taken from backbone.js
+DrawingBoard.Control.extend = function(protoProps, staticProps) {
+	var parent = this;
+	var child;
+	if (protoProps && protoProps.hasOwnProperty('constructor')) {
+		child = protoProps.constructor;
+	} else {
+		child = function(){ return parent.apply(this, arguments); };
+	}
+	$.extend(child, parent, staticProps);
+	var Surrogate = function(){ this.constructor = child; };
+	Surrogate.prototype = parent.prototype;
+	child.prototype = new Surrogate();
+	if (protoProps) $.extend(child.prototype, protoProps);
+	child.__super__ = parent.prototype;
+	return child;
+};
+DrawingBoard.Control.Color = DrawingBoard.Control.extend({
+	name: 'colors',
+
+	initialize: function() {
+		this.initTemplate();
+
+		var that = this;
+		this.$el.on('click', '.drawing-board-control-colors-picker', function(e) {
+			var color = $(this).attr('data-color');
+			that.board.setColor(color);
+			that.$el.find('.drawing-board-control-colors-current')
+				.css('background-color', color)
+				.attr('data-color', color);
+
+			that.board.ev.trigger('color:changed', color);
+			that.$el.find('.drawing-board-control-colors-rainbows').addClass('drawing-board-utils-hidden');
+
+			e.preventDefault();
+		});
+
+		this.$el.on('click', '.drawing-board-control-colors-current', function(e) {
+			that.$el.find('.drawing-board-control-colors-rainbows').toggleClass('drawing-board-utils-hidden');
+			e.preventDefault();
+		});
+
+		$('body').on('click', function(e) {
+			var $target = $(e.target);
+			var $relatedButton = $target.hasClass('drawing-board-control-colors-current') ? $target : $target.closest('.drawing-board-control-colors-current');
+			var $myButton = that.$el.find('.drawing-board-control-colors-current');
+			var $popup = that.$el.find('.drawing-board-control-colors-rainbows');
+			if ( (!$relatedButton.length || $relatedButton.get(0) !== $myButton.get(0)) && !$popup.hasClass('drawing-board-utils-hidden') )
+				$popup.addClass('drawing-board-utils-hidden');
+		});
+	},
+
+	initTemplate: function() {
+		var tpl = '<div class="drawing-board-control-inner">' +
+			'<div class="drawing-board-control-colors-current" style="background-color: {{color}}" data-color="{{color}}"></div>' +
+			'<div class="drawing-board-control-colors-rainbows">{{rainbows}}</div>' +
+			'</div>';
+		var oneColorTpl = '<div class="drawing-board-control-colors-picker" data-color="{{color}}" style="background-color: {{color}}"></div>';
+		var rainbows = '';
+		$.each([0.75, 0.5, 0.25], $.proxy(function(key, val) {
+			var i = 0;
+			var additionalColor = null;
+			rainbows += '<div class="drawing-board-control-colors-rainbow">';
+			if (val == 0.25) additionalColor = this._rgba(0, 0, 0, 1);
+			if (val == 0.5) additionalColor = this._rgba(150, 150, 150, 1);
+			if (val == 0.75) additionalColor = this._rgba(255, 255, 255, 1);
+			rainbows += DrawingBoard.Utils.tpl(oneColorTpl, {color: additionalColor.toString() });
+			while (i <= 330) {
+				rainbows += DrawingBoard.Utils.tpl(oneColorTpl, {color: this._hsl2Rgba(this._hsl(i-60, 1, val)).toString() });
+				i+=30;
+			}
+			rainbows += '</div>';
+		}, this));
+
+		this.$el.append( $( DrawingBoard.Utils.tpl(tpl, {color: this.board.color, rainbows: rainbows }) ) );
+		this.$el.find('.drawing-board-control-colors-rainbows').addClass('drawing-board-utils-hidden');
+	},
+
+	onBoardReset: function(opts) {
+		this.board.setColor(this.$el.find('.drawing-board-control-colors-current').attr('data-color'));
+	},
+
+	_rgba: function(r, g, b, a) {
+		return { r: r, g: g, b: b, a: a, toString: function() { return "rgba(" + r +", " + g + ", " + b + ", " + a + ")"; } };
+	},
+
+	_hsl: function(h, s, l) {
+		return { h: h, s: s, l: l, toString: function() { return "hsl(" + h +", " + s*100 + "%, " + l*100 + "%)"; } };
+	},
+
+	_hex2Rgba: function(hex) {
+		var num = parseInt(hex.substring(1), 16);
+		return this._rgba(num >> 16, num >> 8 & 255, num & 255, 1);
+	},
+
+	//conversion function (modified a bit) taken from http://mjijackson.com/2008/02/rgb-to-hsl-and-rgb-to-hsv-color-model-conversion-algorithms-in-javascript
+	_hsl2Rgba: function(hsl) {
+		var h = hsl.h/360, s = hsl.s, l = hsl.l, r, g, b;
+		function hue2rgb(p, q, t) {
+			if(t < 0) t += 1;
+			if(t > 1) t -= 1;
+			if(t < 1/6) return p + (q - p) * 6 * t;
+			if(t < 1/2) return q;
+			if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+			return p;
+		}
+		if (s === 0) {
+			r = g = b = l; // achromatic
+		} else {
+			var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+			var p = 2 * l - q;
+			r = Math.floor( (hue2rgb(p, q, h + 1/3)) * 255);
+			g = Math.floor( (hue2rgb(p, q, h)) * 255);
+			b = Math.floor( (hue2rgb(p, q, h - 1/3)) * 255);
+		}
+		return this._rgba(r, g, b, 1);
+	}
+});
+DrawingBoard.Control.DrawingMode = DrawingBoard.Control.extend({
+
+	name: 'drawingmode',
+
+	defaults: {
+		pencil: true,
+		eraser: true,
+		filler: true
+	},
+
+	initialize: function() {
+
+		this.prevMode = this.board.getMode();
+
+		$.each(["pencil", "eraser", "filler"], $.proxy(function(k, value) {
+			if (this.opts[value]) {
+				this.$el.append('<button class="drawing-board-control-drawingmode-' + value + '-button" data-mode="' + value + '"></button>');
+			}
+		}, this));
+
+		this.$el.on('click', 'button[data-mode]', $.proxy(function(e) {
+			var value = $(e.currentTarget).attr('data-mode');
+			var mode = this.board.getMode();
+			if (mode !== value) this.prevMode = mode;
+			var newMode = mode === value ? this.prevMode : value;
+			this.board.setMode( newMode );
+			e.preventDefault();
+		}, this));
+
+		this.board.ev.bind('board:mode', $.proxy(function(mode) {
+			this.toggleButtons(mode);
+		}, this));
+
+		this.toggleButtons( this.board.getMode() );
+	},
+
+	toggleButtons: function(mode) {
+		this.$el.find('button[data-mode]').each(function(k, item) {
+			var $item = $(item);
+			$item.toggleClass('active', mode === $item.attr('data-mode'));
+		});
+	}
+
+});
+
+DrawingBoard.Control.Navigation = DrawingBoard.Control.extend({
+
+	name: 'navigation',
+
+	defaults: {
+		back: true,
+		forward: true,
+		reset: true
+	},
+
+	initialize: function() {
+		var el = '';
+		if (this.opts.back) el += '<button class="drawing-board-control-navigation-back">&larr;</button>';
+		if (this.opts.forward) el += '<button class="drawing-board-control-navigation-forward">&rarr;</button>';
+		if (this.opts.reset) el += '<button class="drawing-board-control-navigation-reset">&times;</button>';
+		this.$el.append(el);
+
+		if (this.opts.back) {
+			var $back = this.$el.find('.drawing-board-control-navigation-back');
+			this.board.ev.bind('historyNavigation', $.proxy(this.updateBack, this, $back));
+			this.$el.on('click', '.drawing-board-control-navigation-back', $.proxy(function(e) {
+				this.board.goBackInHistory();
+				e.preventDefault();
+			}, this));
+
+			this.updateBack($back);
+		}
+
+		if (this.opts.forward) {
+			var $forward = this.$el.find('.drawing-board-control-navigation-forward');
+			this.board.ev.bind('historyNavigation', $.proxy(this.updateForward, this, $forward));
+			this.$el.on('click', '.drawing-board-control-navigation-forward', $.proxy(function(e) {
+				this.board.goForthInHistory();
+				e.preventDefault();
+			}, this));
+
+			this.updateForward($forward);
+		}
+
+		if (this.opts.reset) {
+			this.$el.on('click', '.drawing-board-control-navigation-reset', $.proxy(function(e) {
+				this.board.reset({ background: true });
+				e.preventDefault();
+			}, this));
+		}
+	},
+
+	updateBack: function($back) {
+		if (this.board.history.canUndo()) {
+			$back.removeAttr('disabled');
+		} else {
+			$back.attr('disabled', 'disabled');
+		}
+	},
+
+	updateForward: function($forward) {
+		if (this.board.history.canRedo()) {
+			$forward.removeAttr('disabled');
+		} else {
+			$forward.attr('disabled', 'disabled');
+		}
+	}
+});
+DrawingBoard.Control.Size = DrawingBoard.Control.extend({
+
+	name: 'size',
+
+	defaults: {
+		type: "auto",
+		dropdownValues: [1, 3, 6, 10, 20, 30, 40, 50],
+		min: 1,
+		max: 50
+	},
+
+	types: ['dropdown', 'range'],
+
+	initialize: function() {
+		if (this.opts.type == "auto")
+			this.opts.type = this._iHasRangeInput() ? 'range' : 'dropdown';
+		var tpl = $.inArray(this.opts.type, this.types) > -1 ? this['_' + this.opts.type + 'Template']() : false;
+		if (!tpl) return false;
+
+		this.val = this.board.opts.size;
+
+		this.$el.append( $( tpl ) );
+		this.$el.attr('data-drawing-board-type', this.opts.type);
+		this.updateView();
+
+		var that = this;
+
+		if (this.opts.type == "range") {
+			this.$el.on('change', '.drawing-board-control-size-range-input', function(e) {
+				that.val = $(this).val();
+				that.updateView();
+
+				that.board.ev.trigger('size:changed', that.val);
+
+				e.preventDefault();
+			});
+		}
+
+		if (this.opts.type == "dropdown") {
+			this.$el.on('click', '.drawing-board-control-size-dropdown-current', $.proxy(function(e) {
+				this.$el.find('.drawing-board-control-size-dropdown').toggleClass('drawing-board-utils-hidden');
+			}, this));
+
+			this.$el.on('click', '[data-size]', function(e) {
+				that.val = parseInt($(this).attr('data-size'), 0);
+				that.updateView();
+
+				that.board.ev.trigger('size:changed', that.val);
+
+				e.preventDefault();
+			});
+		}
+	},
+
+	_rangeTemplate: function() {
+		var tpl = '<div class="drawing-board-control-inner" title="{{size}}">' +
+			'<input type="range" min="{{min}}" max="{{max}}" value="{{size}}" step="1" class="drawing-board-control-size-range-input">' +
+			'<span class="drawing-board-control-size-range-current"></span>' +
+			'</div>';
+		return DrawingBoard.Utils.tpl(tpl, {
+			min: this.opts.min,
+			max: this.opts.max,
+			size: this.board.opts.size
+		});
+	},
+
+	_dropdownTemplate: function() {
+		var tpl = '<div class="drawing-board-control-inner" title="{{size}}">' +
+			'<div class="drawing-board-control-size-dropdown-current"><span></span></div>' +
+			'<ul class="drawing-board-control-size-dropdown">';
+		$.each(this.opts.dropdownValues, function(i, size) {
+			tpl += DrawingBoard.Utils.tpl(
+				'<li data-size="{{size}}"><span style="width: {{size}}px; height: {{size}}px; border-radius: {{size}}px;"></span></li>',
+				{ size: size }
+			);
+		});
+		tpl += '</ul></div>';
+		return tpl;
+	},
+
+	onBoardReset: function(opts) {
+		this.updateView();
+	},
+
+	updateView: function() {
+		var val = this.val;
+		this.board.ctx.lineWidth = val;
+
+		this.$el.find('.drawing-board-control-size-range-current, .drawing-board-control-size-dropdown-current span').css({
+			width: val + 'px',
+			height: val + 'px',
+			borderRadius: val + 'px',
+			marginLeft: -1*val/2 + 'px',
+			marginTop: -1*val/2 + 'px'
+		});
+
+		this.$el.find('.drawing-board-control-inner').attr('title', val);
+
+		if (this.opts.type == 'dropdown') {
+			var closest = null;
+			$.each(this.opts.dropdownValues, function(i, size) {
+				if (closest === null || Math.abs(size - val) < Math.abs(closest - val))
+					closest = size;
+			});
+			this.$el.find('.drawing-board-control-size-dropdown').addClass('drawing-board-utils-hidden');
+		}
+	},
+
+	_iHasRangeInput: function() {
+		var inputElem  = document.createElement('input'),
+			smile = ':)',
+			docElement = document.documentElement,
+			inputElemType = 'range',
+			available;
+		inputElem.setAttribute('type', inputElemType);
+		available = inputElem.type !== 'text';
+		inputElem.value         = smile;
+		inputElem.style.cssText = 'position:absolute;visibility:hidden;';
+		if ( /^range$/.test(inputElemType) && inputElem.style.WebkitAppearance !== undefined ) {
+			docElement.appendChild(inputElem);
+			defaultView = document.defaultView;
+			available = defaultView.getComputedStyle &&
+				defaultView.getComputedStyle(inputElem, null).WebkitAppearance !== 'textfield' &&
+				(inputElem.offsetHeight !== 0);
+			docElement.removeChild(inputElem);
+		}
+		return !!available;
+	}
+});
+DrawingBoard.Control.Download = DrawingBoard.Control.extend({
+
+	name: 'download',
+
+	initialize: function() {
+		this.$el.append('<button class="drawing-board-control-download-button"></button>');
+		this.$el.on('click', '.drawing-board-control-download-button', $.proxy(function(e) {
+			this.board.downloadImg();
+			e.preventDefault();
+		}, this));
+	}
+
+});
+
+export default DrawingBoard;

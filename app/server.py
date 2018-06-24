@@ -82,8 +82,7 @@ class Match(Resource):
 
 class ArenaGallery(Resource):
     # TODO: Unnecessary API route
-    def get(self):
-        id = request.args['id']
+    def get(self, id):
         if not id:
             return 'Invalid', BAD_REQUEST
         arena = session.query(Arena).filter_by(id=id)
@@ -164,6 +163,8 @@ class PlayercCollection(Resource):
 
 api.add_resource(Avatar, '/api/u/<string:name>/avatar.png')
 api.add_resource(Player, '/api/u/<string:name>')
+api.add_resource(ArenaGallery, '/api/arena/<int:id>')
+api.add_resource(Match, '/api/match')
 
 '''''''''''''''''''''''''''''''''''''''
     Single page website with Vue.js
@@ -176,6 +177,6 @@ def catch_all(path):
     return render_template("index.html")
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)
     socketio.run(app)
     import matchmaker

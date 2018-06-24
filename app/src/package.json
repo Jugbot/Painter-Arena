@@ -4,8 +4,8 @@
   "description": "",
   "main": "main.js",
   "scripts": {
-    "dev": "webpack-dev-server --inline --progress --config build/webpack.dev.conf.js",
-    "start": "npm run dev",
+    "dev": "webpack-dev-server --inline --progress --config build/webpack.dev.config.js",
+    "start": "npx webpack --config build/webpack.config.js",
     "lint": "eslint --ext .js,.vue src",
     "build": "node build/build.js"
   },
@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "jquery": "^3.3.1",
+    "socket.io-client": "^2.1.1",
     "vue": "^2.5.16",
     "vue-resource": "^1.5.1",
     "vue-router": "^3.0.1"

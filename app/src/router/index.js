@@ -25,6 +25,11 @@ export default new Router({
       path: '/login',
       name: 'Login',
       component: Login
+    },
+    {
+      path: '/arena/:id',
+      name: 'Arena',
+      component: Arena
     }
   ],
   mode: 'hash'

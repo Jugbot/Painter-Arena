@@ -31,11 +31,11 @@ export default {
         if (response.ok) {
           setTimeout(() => {
             this.$router.push({
-              name: 'user',
+              name: 'Main',
               params: {
                 id: this.user.username
               }
-            }).bind(this);
+            });
           }, 1000);
         }
       }, response => {
@@ -52,11 +52,11 @@ export default {
         if (response.ok) {
           setTimeout(() => {
             this.$router.push({
-              name: 'user',
+              name: 'Main',
               params: {
                 id: this.user.username
               }
-            }).bind(this);
+            });
           }, 1000);
         }
       }, response => {
