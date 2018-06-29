@@ -1,46 +1,54 @@
 <template lang="html">
   <div>
-    <h2>
-      <img class='avatar' :src="imageURL()" alt="not working">
-      Welcome {{ user.username }}
-    </h2>
-    <button type="button" v-on:click="enterArena">Enter Arena</button>
+    <div class="header">
+      <h2>
+        <avatar :username="$root.user.username" :src="$root.user.avatar"></avatar>
+        <!-- <img class='avatar' :src="$root.safe_avatar" alt="not working"> -->
+        Welcome {{ $root.user.username }}
+      </h2>
+      <button type="button" v-on:click="enterArena">Enter Arena</button>
+    </div>
+    <router-view/>
   </div>
 </template>
 
 <script>
-import io from 'socket.io-client';
+import Avatar from 'vue-avatar';
 
 export default {
+  name: "Main-Page",
   methods: {
-    imageURL() {
-      return this.http.root + 'api/u/' + this.user.username + '/avatar.png';
-    },
     enterArena() {
-      // TODO: flask socketio
-      this.$http.get('api/match').then(response => {
+      this.$http.get('api/match').then(response => { //, {params: {headers: {'Authorization':"Basic dXNlcm5hbWU6cGFzc3dvcmQ="}}}
           console.log(response.body);
-        }, response => {
-          console.log(response.status + "  " + response.body);
+          this.$root.user.arena = {...this.$root.user.arena, ...response.body};
+          this.$router.push({
+            name: "Arena",
+            params: {'id': response.body.id}
+          });
+        }, error => {
+          console.log(error.status + "  " + error.body);
         });
     }
   },
-  mounted() {
-      var socket = io.connect(this.http.root);
-      socket.on('match_search_progress', function(content, rinfo) {
-        console.log(content);
-
-        // this.$router.push({
-        //   name: "Arena",
-        //   params: {}
-        // });
+  created() {
+    console.log(this);
+    if (!this.$root.user.authorized)
+      this.$router.push({
+        name: "Login"
       });
+  },
+  components: {
+    Avatar
   }
 
 }
 </script>
 
 <style lang="css">
+  .header {
+    width: 100vw;
+  }
   .avatar {
     width: 2em;
   }

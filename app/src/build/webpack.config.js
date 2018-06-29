@@ -1,8 +1,8 @@
-const webpack = require('webpack')
+const webpack = require('webpack');
 const {
   resolve
-} = require('path')
-const VueLoaderPlugin = require('vue-loader/lib/plugin')
+} = require('path');
+const VueLoaderPlugin = require('vue-loader/lib/plugin');
 
 module.exports = {
   mode: 'development',
@@ -11,6 +11,17 @@ module.exports = {
       {
         test: /\.vue$/,
         loader: 'vue-loader'
+      },
+      {
+        test: /\.(png|jpg|gif)$/,
+        use: [
+          {
+            loader: 'url-loader',
+            options: {
+              limit: 8192
+            }
+          }
+        ]
       },
       // this will apply to both plain `.js` files
       // AND `<script>` blocks in `.vue` files
@@ -30,11 +41,14 @@ module.exports = {
     ]
   },
   resolve: {
-    extensions: ['.js', '.vue', '.json'],
+    extensions: ['.js', '.vue', '.json', '.png'],
     alias: {
       'vue$': 'vue/dist/vue.esm.js',
-      '@': resolve(__dirname, '..'),
-    }
+    },
+    modules: [
+      resolve(__dirname, '..', '../src'),
+      'node_modules'
+    ]
   },
   context: resolve(__dirname, '../'),
   entry: {

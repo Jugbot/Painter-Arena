@@ -11,8 +11,8 @@
 </script>
 
 <style lang="css">
-body {
-	background: #dedede;
-	margin: 0;
-}
+  body {
+  	background: #dedede;
+  	margin: 0;
+  }
 </style>

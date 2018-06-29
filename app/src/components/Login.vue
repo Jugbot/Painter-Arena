@@ -1,7 +1,7 @@
 <template lang="html">
   <div>
-    <input type="text" v-model='user.username' name="username"/><br>
-    <input type="password" v-model='user.password' name="password"/><br>
+    <input type="text" v-model='$root.user.username' name="username"/><br>
+    <input type="password" v-model='$root.user.password' name="password"/><br>
     <button type="button" v-on:click="login">Login</button>
     <button type="button" v-on:click="register">Register</button>
     <h3>{{ message }}</h3>
@@ -12,56 +12,45 @@
 import Vue from 'vue';
 
 export default {
+  name: 'Login-Page',
   data() {
     return {
       message: 'Hello Vue!'
     }
   },
   methods: {
-    make_basic_auth(user, pass) {
+    _make_basic_auth(user, pass) {
       var tok = user + ':' + pass;
       return "Basic " + btoa(tok);
     },
-    register() {
+    _fetch_user(protocol) {
       this.message = 'waiting...';
-      var auth = this.make_basic_auth(this.user.username, this.user.password);
+      var auth = this._make_basic_auth(this.$root.user.username, this.$root.user.password);
       Vue.http.headers.common['Authorization'] = auth;
-      this.$http.post('api/u/' + this.user.username).then(response => {
-        this.message = response.body;
-        if (response.ok) {
+      this.$http[protocol]('api/u/' + this.$root.user.username).then(response => {
+        this.message = "Success";
+        if (response.body.authorized) {
+          this.$root.user = {...this.$root.user, ...response.body};
+          console.log(this);
           setTimeout(() => {
             this.$router.push({
-              name: 'Main',
+              name: 'Profile',
               params: {
-                id: this.user.username
+                id: this.$root.user.username
               }
             });
           }, 1000);
         }
       }, response => {
-        this.message = response.status + "  " + response.body;
+        this.message = response.body;
+        console.log(response.status + "  " + response.body);
       });
     },
+    register() {
+      this._fetch_user('post');
+    },
     login() {
-      this.message = 'waiting...';
-      var auth = this.make_basic_auth(this.user.username, this.user.password);
-      Vue.http.headers.common['Authorization'] = auth;
-      this.$http.get('api/u/' + this.user.username).then(response => {
-        this.message = response.body;
-        console.log(response.body);
-        if (response.ok) {
-          setTimeout(() => {
-            this.$router.push({
-              name: 'Main',
-              params: {
-                id: this.user.username
-              }
-            });
-          }, 1000);
-        }
-      }, response => {
-        this.message = response.status + "  " + response.body;
-      });
+      this._fetch_user('get');
     }
   }
 }

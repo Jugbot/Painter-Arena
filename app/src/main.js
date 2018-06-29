@@ -1,33 +1,36 @@
 import Vue from 'vue';
 import Resource from 'vue-resource'
-import App from './App';
-import router from './router';
+import App from 'App';
+import router from 'router/index';
 
 Vue.use(Resource);
-
-Vue.mixin({ //globals
-  delimiters: ["[[", "]]"],
-  http: {
-    root: 'http://127.0.0.1:5000/'
-  },
-  data: function() {
-    return {
-      user: {
-        username: 'username',
-        password: 'password'
-      },
-      http: {
-        root: 'http://127.0.0.1:5000/'
-      }
-    }
-  }
-});
 
 new Vue({
   router: router,
   el: '#app',
+  delimiters: ["[[", "]]"],
+  http: {
+    root: 'http://127.0.0.1:5000/'
+  },
   components: {
     App
+  },
+  data() {
+    return {
+      user: {
+        authorized: false,
+        username: '',
+        password: '',
+        avatar: false,
+        entry: false,
+        skill: '',
+        arena: {
+          id: '',
+          start: false,
+          votes: '',
+        }
+      }
+    }
   },
   template: '<App/>'
 });
