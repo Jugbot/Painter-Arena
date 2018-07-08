@@ -1,14 +1,36 @@
 <template lang="html">
   <div>
-    <div class="header">
-      <h2>
-        <avatar :username="$root.user.username" :src="$root.user.avatar"></avatar>
-        <!-- <img class='avatar' :src="$root.safe_avatar" alt="not working"> -->
-        Welcome {{ $root.user.username }}
-      </h2>
-      <button type="button" v-on:click="enterArena">Enter Arena</button>
-    </div>
-    <router-view/>
+    <section class="hero is-fullheight is-info">
+
+      <section class="hero-header">
+        <nav class="level is-mobile">
+          <div class="level-left">
+            <div class="level-item">
+              <figure class="avatar">
+                <avatar :username="$root.user.username" :src="$root.user.avatar"></avatar>
+              </figure>
+              <h2>{{ $root.user.username }}</h2>
+            </div>
+          </div>
+          <div class="level-item">
+            <h1>Painter Arena</h1>
+          </div>
+          <div class="level-right">
+            <div class="level-item">
+              <button class="button is-success" type="button" v-on:click="enterArena">Enter Arena</button>
+            </div>
+          </div>
+        </nav>
+      </section>
+
+      <section class="hero-body">
+        <router-view/>
+      </section>
+
+      <section class="hero-footer">
+      </section>
+
+    </section>
   </div>
 </template>
 
@@ -45,11 +67,11 @@ export default {
 }
 </script>
 
-<style lang="css">
+<style scoped lang="css">
   .header {
     width: 100vw;
   }
   .avatar {
-    width: 2em;
+    margin: 0.5em;
   }
 </style>

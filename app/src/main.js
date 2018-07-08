@@ -1,7 +1,17 @@
-import Vue from 'vue';
+import Vue from 'vue'
 import Resource from 'vue-resource'
-import App from 'App';
-import router from 'router/index';
+import App from 'App'
+import router from 'router/index'
+import BootstrapVue from 'bootstrap-vue'
+
+import Buefy from 'buefy'
+import 'buefy/lib/buefy.css'
+
+Vue.use(Buefy)
+
+// import 'bootstrap/dist/css/bootstrap.css'
+// import 'bootstrap-vue/dist/bootstrap-vue.css'
+// Vue.use(BootstrapVue);
 
 Vue.use(Resource);
 

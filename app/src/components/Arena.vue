@@ -5,20 +5,24 @@
       <h3>active: {{$root.user.arena.start}}, votes remaining: {{$root.user.arena.votes}}</h3>
     </span>
     <div v-for="p in players">
-      <div class='display-board' :style="{ 'background-image': 'url(' + p.image + ')' }">
+      <div class='box display-board' :style="{ 'background-image': 'url(' + p.image + ')' }">
         <avatar :username="p.username" :src="p.avatar"></avatar>
         <h2>{{p.username}} // {{p.votes}}</h2>
-        <button type="button" v-on:click="vote($event, p)">Vote</button>
+        <button type="button" v-on:click="vote($event, p)" :disabled="p.voted">Vote</button>
         <br>
       </div>
     </div>
-    <div class="drawing-board" id='simple-board'></div>
-    <button type="button" v-on:click="update_entry()">Submit</button>
+    <section class="section">
+      <div class="box">
+        <div class="drawing-board" id='simple-board'></div>
+        <button class="button is-block is-fullwidth" type="button" v-on:click="update_entry()">Submit</button>
+      </div>
+    </section>
   </div>
 </template>
 
 <script>
-import DrawingBoard from 'dist/drawingboard/drawingboard.js';
+import DrawingBoard from 'drawingboard/drawingboard.js';
 import Avatar from 'vue-avatar';
 
 export default {
@@ -48,11 +52,12 @@ export default {
       this.$root.user.arena.votes -= 1;
       player.votes += 1;
       this._update_votes(player);
+      e.target.disabled = true;
     },
     _update_votes(player) {
       this.$http.put('api/arena/' + this.id, [player.username, ]).then(response => {
       }, error => {
-        console.log(response.status + "  " + response.body);
+        console.log(error.status + "  " + error.body);
       });
     }
   },
@@ -60,7 +65,6 @@ export default {
     this.id = this.$route.params.id;
 
     this.$http.get('api/arena/' + this.id).then(response => {
-      console.log(response.body);
       if (response.ok) {
         this.players = response.body;
       }

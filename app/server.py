@@ -14,9 +14,6 @@ from tables import Base, Arena, User
 from templates import *
 import base64
 
-thread = None
-thread_lock = Lock()
-
 app = Flask(__name__)
 app.config["SECRET_KEY"] = 'the quick brown fox jumps over the lazy dog'
 app.config["DATABASE_URI"] = 'mysql://root:Minecraft700@localhost/store'
@@ -25,7 +22,6 @@ db_engine = create_engine(app.config["DATABASE_URI"], echo=True)
 Session = sessionmaker(bind=db_engine)
 session = Session()
 auth = HTTPBasicAuth()
-# socketio = SocketIO(app)
 
 Base.metadata.drop_all(db_engine)
 Base.metadata.create_all(db_engine)
@@ -40,8 +36,6 @@ CONFLICT = 409
 
 @auth.verify_password
 def verify_password(username, password):
-    # if username != request.view_args.get('name'):
-    #     return False
     u = session.query(User).filter_by(username=username).first()
     if not u or not u.verify_password(password):
         return False
@@ -52,15 +46,10 @@ def verify_password(username, password):
 class Match(Resource):
     @auth.login_required
     def get(self):
-        # global thread
-        # with thread_lock:
-        #     if thread is None:
-        #         thread = socketio.start_background_task(target=self.match_search, args=g.user)
-
         user = g.user
         if not user.arena_id: # in battle
             min_range, max_range = 50, 1000
-            interval = 10  # minute
+            interval = 10
             start = time.time()
             progress = 0
             while progress < 1:
@@ -72,11 +61,9 @@ class Match(Resource):
                 progress = (time.time() - start) / interval
                 # skill_difference < time_scalar * min_to_max_skill
                 if closest.difference(user) < progress * (max_range - min_range) + min_range:
-                    # socketio.emit('match_search_progress', {'message': "Found a match", 'success': True, 'id': closest.id})
                     user.join_arena(closest)
                     session.commit()
                     break
-                # socketio.emit('match_search_progress', {'message': "Searching...", 'progress': progress, 'success': True})
             arena = user.create_arena()
             session.add(arena)
             user.join_arena(arena)
@@ -86,6 +73,7 @@ class Match(Resource):
 
 
 class ArenaGallery(Resource):
+    @auth.login_required
     def get(self, id):
         if not id:
             return 'Invalid', BAD_REQUEST
@@ -101,7 +89,7 @@ class ArenaGallery(Resource):
                 with open('dynamic/u/%s/avatar.png' % user.username, "rb") as imageFile:
                     avatar = base64.b64encode(imageFile.read())
             votes = user.votes_received
-            payload.append({'username': user.username, 'avatar': avatar, 'image': image, 'votes': votes})
+            payload.append({'username': user.username, 'avatar': avatar, 'image': image, 'votes': votes, 'voted': (g.user in user.votes_received) })
         return payload
 
     @auth.login_required
@@ -128,7 +116,7 @@ class Player(Resource):
         auth = request.authorization
         print(auth)
         authorized = False
-        if name == auth.username:
+        if auth and name == auth.username:
             authorized = verify_password(auth.username, auth.password)
         payload = {'authorized': authorized}
         ##############

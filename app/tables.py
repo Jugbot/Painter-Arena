@@ -107,15 +107,16 @@ class User(Base):
     arena = relationship("Arena", back_populates="players")
     entry = Column(Boolean, default=False, nullable=False)
     votes_pouch = Column(Integer, default = VOTES_PER_PLAYER, nullable = False)
-    votes_received = Column(Integer, default = 0, nullable = False)
+    votes_received = relationship("Arena") # Column(Integer, default = 0, nullable = False)
 
     # TODO: record who you voted for
     def vote(self, other):
-        if self.votes_pouch <= 0:
-            return
+        if self.votes_pouch <= 0 and self not in other.votes_received:
+            return False
         self.votes_pouch -= 1
-        other.votes_received += 1
+        other.votes_received.append(self)
         self.arena.vote_count += 1
+        return True
 
     def join_arena(self, arena):
         arena.players.append(self)
