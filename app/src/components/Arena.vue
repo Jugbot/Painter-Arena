@@ -1,21 +1,45 @@
 <template lang="html">
-  <div>
-    <span>
-      <h2>Arena #{{this.$root.user.arena.id}}</h2>
-      <h3>active: {{$root.user.arena.start}}, votes remaining: {{$root.user.arena.votes}}</h3>
-    </span>
-    <div v-for="p in players">
-      <div class='box display-board' :style="{ 'background-image': 'url(' + p.image + ')' }">
-        <avatar :username="p.username" :src="p.avatar"></avatar>
-        <h2>{{p.username}} // {{p.votes}}</h2>
-        <button type="button" v-on:click="vote($event, p)" :disabled="p.voted">Vote</button>
-        <br>
+  <div class="container is-fluid">
+    <section class="hero">
+      <div class="hero-body">
+        <div class="container has-text-centered">
+          <h1 class="title">Arena #{{this.$root.user.arena.id}}</h1>
+          <h2 class="subtitle">active: {{$root.user.arena.start}}, votes remaining: {{$root.user.arena.votes}}</h2>
+        </div>
       </div>
-    </div>
+    </section>
+
     <section class="section">
-      <div class="box">
-        <div class="drawing-board" id='simple-board'></div>
-        <button class="button is-block is-fullwidth" type="button" v-on:click="update_entry()">Submit</button>
+      <div class='container'>
+        <div class="grid">
+
+          <div class='grid_item box display-board' :style="{ 'background-image':'url(' + p.image + ')' }"  v-for="p in players">
+            <div class="overlay-board is-overlay">
+              <avatar :username="p.username" :src="p.avatar"></avatar>
+              <span>{{p.username}} // {{p.votes}}</span>
+              <b-field>
+                <b-checkbox-button
+                  v-model="$root.user.arena.voted_users"
+                  :native-value='p.username'
+                  @click.native="vote(p)"
+                  type="is-success">
+                  <span>vote</span>
+                  <!-- @click.native="vote($event, p)" -->
+                </b-checkbox-button>
+              </b-field>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class='container'>
+        <div class="box">
+          <div class="drawing-board" id='simple-board'></div>
+          <button class="button is-block is-fullwidth" type="button" v-on:click="update_entry()">Submit</button>
+        </div>
       </div>
     </section>
   </div>
@@ -47,12 +71,12 @@ export default {
         console.log("Error" + response.body);
       });
     },
-    vote(e, player) {
+    vote(player) {
       if (this.$root.user.arena.votes <= 0) return;
       this.$root.user.arena.votes -= 1;
       player.votes += 1;
       this._update_votes(player);
-      e.target.disabled = true;
+      console.log("voted");
     },
     _update_votes(player) {
       this.$http.put('api/arena/' + this.id, [player.username, ]).then(response => {
@@ -61,7 +85,7 @@ export default {
       });
     }
   },
-  mounted() {
+  created() {
     this.id = this.$route.params.id;
 
     this.$http.get('api/arena/' + this.id).then(response => {
@@ -71,8 +95,6 @@ export default {
     }, error => {
       console.log(error.status + "  " + error.body);
     });
-
-    //this.board.ev.bind('board:stopDrawing', this.update_entry);
   },
   components: {
     Avatar
@@ -80,13 +102,39 @@ export default {
 }
 </script>
 
-<style lang="css">
+<style scoped lang="css">
 #simple-board {
   width: 200px;
   height: 200px;
 }
+
+.overlay-board {
+  border-radius: inherit;
+  background-color: rgba(0,0,0,0.3);
+  opacity: 0;
+  transition: 0.2s ease;
+}
+
 .display-board {
   width: 200px;
   height: 200px;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-image: url(http://via.placeholder.com/128x128);
+}
+
+.display-board:hover .overlay-board {
+  opacity: 1;
+}
+
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+}
+
+.grid .grid_item {
+  position: relative;
+  margin: 0 15px 30px 15px;
 }
 </style>

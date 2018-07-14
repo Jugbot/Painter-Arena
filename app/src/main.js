@@ -6,12 +6,9 @@ import BootstrapVue from 'bootstrap-vue'
 
 import Buefy from 'buefy'
 import 'buefy/lib/buefy.css'
+import '@fortawesome/fontawesome-free/css/all.css'
 
-Vue.use(Buefy)
-
-// import 'bootstrap/dist/css/bootstrap.css'
-// import 'bootstrap-vue/dist/bootstrap-vue.css'
-// Vue.use(BootstrapVue);
+Vue.use(Buefy, {defaultIconPack: 'fas'})
 
 Vue.use(Resource);
 
@@ -31,8 +28,8 @@ new Vue({
         authorized: false,
         username: '',
         password: '',
-        avatar: false,
-        entry: false,
+        avatar: '',
+        entry: '',
         skill: '',
         arena: {
           id: '',

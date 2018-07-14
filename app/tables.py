@@ -99,6 +99,7 @@ class User(Base):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True)
+    parent_id = Column(Integer, ForeignKey('users.id'))
     username = Column(String(16), index=True, unique=True, nullable=False)
     password_hash = Column(String(128), nullable=False)
     avatar = Column(Boolean, default=False, nullable=False)
@@ -107,14 +108,28 @@ class User(Base):
     arena = relationship("Arena", back_populates="players")
     entry = Column(Boolean, default=False, nullable=False)
     votes_pouch = Column(Integer, default = VOTES_PER_PLAYER, nullable = False)
-    votes_received = relationship("Arena") # Column(Integer, default = 0, nullable = False)
+    voted_users = relationship("User", post_update=True)
+    votes_received = Column(Integer, default = 0, nullable = False)
 
-    # TODO: record who you voted for
+    def toggle_vote(self, other):
+        if other in self.voted_users:
+            self.unvote(other)
+        else:
+            self.vote(other)
+
+    def unvote(self, other):
+        self.votes_pouch += 1
+        self.voted_users.remove(other)
+        other.votes_received -= 1
+        self.arena.vote_count -= 1
+
+
     def vote(self, other):
         if self.votes_pouch <= 0 and self not in other.votes_received:
             return False
         self.votes_pouch -= 1
-        other.votes_received.append(self)
+        self.voted_users.append(other)
+        other.votes_received += 1
         self.arena.vote_count += 1
         return True
 

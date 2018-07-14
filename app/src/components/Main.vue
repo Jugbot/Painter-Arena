@@ -3,17 +3,20 @@
     <section class="hero is-fullheight is-info">
 
       <section class="hero-header">
-        <nav class="level is-mobile">
+        <nav class="level is-mobile box is-radiusless is-paddingless">
           <div class="level-left">
             <div class="level-item">
               <figure class="avatar">
-                <avatar :username="$root.user.username" :src="$root.user.avatar"></avatar>
+                <avatar :username="$root.user.username" :src="$root.user.avatar" :rounded='false'></avatar>
               </figure>
-              <h2>{{ $root.user.username }}</h2>
+            </div>
+            <div class="level-item has-text-grey ">
+              <span class='has-text-weight-light'> u/ </span>
+              <span class="is-uppercase"> {{ $root.user.username }} </span>
             </div>
           </div>
-          <div class="level-item">
-            <h1>Painter Arena</h1>
+          <div class="level-item is-hidden-mobile">
+            <span class="is-size-4">Painter Arena</span>
           </div>
           <div class="level-right">
             <div class="level-item">
@@ -28,6 +31,7 @@
       </section>
 
       <section class="hero-footer">
+        Hello
       </section>
 
     </section>
@@ -54,7 +58,6 @@ export default {
     }
   },
   created() {
-    console.log(this);
     if (!this.$root.user.authorized)
       this.$router.push({
         name: "Login"
@@ -72,6 +75,6 @@ export default {
     width: 100vw;
   }
   .avatar {
-    margin: 0.5em;
+    margin-right: 0.5em;
   }
 </style>

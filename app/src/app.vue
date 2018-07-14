@@ -11,8 +11,4 @@
 </script>
 
 <style lang="css">
-  body, #id {
-    height: 100vh;
-  	margin: 0;
-  }
 </style>

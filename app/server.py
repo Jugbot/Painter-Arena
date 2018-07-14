@@ -56,7 +56,8 @@ class Match(Resource):
                 print(progress)
                 closest = session.query(Arena).filter(Arena.available).order_by(Arena.difference(user)).first()
                 if closest is None:
-                    break
+                    progress = 1
+                    continue
                 # See if skill is a match, with larger tolerance over a minute of searching
                 progress = (time.time() - start) / interval
                 # skill_difference < time_scalar * min_to_max_skill
@@ -64,10 +65,11 @@ class Match(Resource):
                     user.join_arena(closest)
                     session.commit()
                     break
-            arena = user.create_arena()
-            session.add(arena)
-            user.join_arena(arena)
-            session.commit()
+            else:
+                arena = user.create_arena()
+                session.add(arena)
+                user.join_arena(arena)
+                session.commit()
         return { 'id': user.arena_id, 'start': user.arena.closed, 'votes': user.votes_pouch }, SUCCESS
 
 
@@ -79,6 +81,7 @@ class ArenaGallery(Resource):
             return 'Invalid', BAD_REQUEST
         arena = session.query(Arena).filter_by(id=id).first()
         payload = []
+        voted_users = g.user.voted_users
         for user in arena.players:
             image = user.entry
             if image:
@@ -88,8 +91,12 @@ class ArenaGallery(Resource):
             if avatar:
                 with open('dynamic/u/%s/avatar.png' % user.username, "rb") as imageFile:
                     avatar = base64.b64encode(imageFile.read())
-            votes = user.votes_received
-            payload.append({'username': user.username, 'avatar': avatar, 'image': image, 'votes': votes, 'voted': (g.user in user.votes_received) })
+
+            payload.append({ 'username': user.username,
+                             'avatar': avatar,
+                             'image': image,
+                             'votes': user.votes_received
+                             })
         return payload
 
     @auth.login_required
@@ -101,10 +108,9 @@ class ArenaGallery(Resource):
         votes = request.json
         for user in arena.players:
             if user.username in votes:
-                g.user.vote(user)
+                g.user.toggle_vote(user)
 
 
-# TODO: Consolidate resources such as entries and avatars into Player payloads
 class Player(Resource):
     FILES = ['entry', 'avatar']
 
@@ -113,16 +119,16 @@ class Player(Resource):
         if not user:
             return "No such user", BAD_REQUEST
 
-        auth = request.authorization
-        print(auth)
+        authy = request.authorization
+        print(authy)
         authorized = False
-        if auth and name == auth.username:
-            authorized = verify_password(auth.username, auth.password)
+        if authy and name == authy.username:
+            authorized = verify_password(authy.username, authy.password)
         payload = {'authorized': authorized}
         ##############
         # PUBLIC INFO
         for filename in self.FILES:
-            payload[filename] = False
+            payload[filename] = None
             if getattr(user,filename):
                 payload[filename] = self.get_dynamic_file_base64(user, filename)
         payload['skill'] = user.skill
@@ -130,7 +136,11 @@ class Player(Resource):
         # PRIVATE INFO
         if authorized:
             if user.arena_id:
-                payload['arena'] = { 'id': user.arena_id, 'start': user.arena.closed, 'votes': user.votes_pouch}
+                payload['arena'] = { 'id': user.arena_id,
+                                     'start': user.arena.closed,
+                                     'votes': user.votes_pouch,
+                                     'voted_users': [u.username for u in user.voted_users]
+                                     }
 
         return payload, SUCCESS
 

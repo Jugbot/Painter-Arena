@@ -8,13 +8,13 @@
             <p class="subtitle has-text-grey">Please login to proceed.</p>
             <div class="box">
               <figure class="avatar">
-                <avatar :username="$root.user.username" :src="$root.user.avatar" size="128"></avatar>
+                <avatar :username="$root.user.username" :src="$root.user.avatar" :size="128"></avatar>
               </figure>
               <form>
                 <b-field>
                   <div class="control">
                     <b-input size="is-large"
-                    v-model='$root.user.username'
+                    v-model.lazy='$root.user.username'
                     placeholder="username"
                     max='16'
                     autofocus></b-input>
@@ -27,7 +27,6 @@
                     v-model='$root.user.password'
                     placeholder="password"
                     type="password"
-                    v-on:focus="valid_user()"
                     max='128'></b-input>
                   </div>
                 </b-field>
@@ -38,7 +37,11 @@
                     Remember me
                   </label>
                 </b-field>
-                <button class="button is-block is-info is-large is-fullwidth" v-on:click="fetch_user()">{{this.message}}</button>
+                <button class="button is-block is-large is-fullwidth"
+                :class="{ 'is-info': (!this.btn_state), 'is-success': this.btn_state }"
+                v-on:click="fetch_user()">
+                  {{this.message}}
+                </button>
               </form>
             </div>
               <p class="has-text-grey">
@@ -61,6 +64,7 @@ export default {
   name: 'Login-Page',
   data() {
     return {
+      btn_state: false,
       method: "get",
       message: 'Login',
       pending: false
@@ -77,7 +81,8 @@ export default {
         if (response.body.authorized) {
           this.$toast.open({
                       message: 'Welcome ' + this.$root.user.username + "!",
-                      type: 'is-success'
+                      type: 'is-success',
+                      position: 'is-bottom'
                   });
           this.$root.user = {...this.$root.user, ...response.body};
           setTimeout(() => {
@@ -103,11 +108,16 @@ export default {
       this.$http.get('api/u/' + this.$root.user.username).then(response => {
         this.message = "Login";
         this.method = "get";
+        this.btn_state = false;
       }, error => {
         this.message = "Register";
         this.method = 'post';
+        this.btn_state = true;
       });
     }
+  },
+  updated() { //// FIXME: plz
+    this.valid_user();
   },
   components: {
     Avatar

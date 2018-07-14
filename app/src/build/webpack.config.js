@@ -3,6 +3,7 @@ const {
   resolve
 } = require('path');
 const VueLoaderPlugin = require('vue-loader/lib/plugin');
+var MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
   mode: 'development',
@@ -34,10 +35,20 @@ module.exports = {
       {
         test: /\.css$/,
         use: [
-          'vue-style-loader',
+          // 'vue-style-loader',
+          MiniCssExtractPlugin.loader,
           'css-loader'
         ]
-      }
+      },
+      // FA:
+      {
+        test: /\.woff(2)?(\?v=[0-9]\.[0-9]\.[0-9])?$/,
+        loader: "url-loader?limit=10000&mimetype=application/font-woff&name=../fonts/[hash].[ext]"
+      },
+      {
+        test: /\.(ttf|eot|svg)(\?v=[0-9]\.[0-9]\.[0-9])?$/,
+        loader: "file-loader?name=../fonts/[hash].[ext]"
+      },
     ]
   },
   resolve: {
@@ -60,6 +71,9 @@ module.exports = {
   },
   plugins: [
     new VueLoaderPlugin(),
+    new MiniCssExtractPlugin({
+      filename: '../css/style.css'
+    }),
     new webpack.HotModuleReplacementPlugin(),
   ]
 };
