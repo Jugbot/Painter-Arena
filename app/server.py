@@ -1,3 +1,5 @@
+from binascii import a2b_base64
+
 from flask import Flask, request, g, render_template, send_from_directory
 from flask_restful import Resource, Api
 from flask_httpauth import HTTPBasicAuth
@@ -23,8 +25,8 @@ Session = sessionmaker(bind=db_engine)
 session = Session()
 auth = HTTPBasicAuth()
 
-Base.metadata.drop_all(db_engine)
-Base.metadata.create_all(db_engine)
+# Base.metadata.drop_all(db_engine)
+# Base.metadata.create_all(db_engine)
 
 SUCCESS = 200
 UNAUTHORIZED = 400 #401 # dumb browsers causing unwanted popups
@@ -33,6 +35,24 @@ INTERNAL_ERROR = 500
 INVALID_MEDIA = 415
 CONFLICT = 409
 
+# TODO: Look into file security
+def get_dynamic_file_base64(user, filename):
+    with open('dynamic/u/%s/%s.png' % (user.username, filename), "rb") as imageFile:
+        return 'data:image/png;base64,%s' % base64.b64encode(imageFile.read()).decode()
+
+def set_dynamic_file(user, filename, file):
+    pathlib.Path("dynamic/u/%s" % user.username).mkdir(parents=True, exist_ok=True)
+
+    data = file.split(',')[1]
+    binary_data = a2b_base64(data)
+
+    fd = open('dynamic/u/%s/%s.png' % (user.username, filename), 'wb')
+    fd.write(binary_data)
+    fd.close()
+
+    # file.save('dynamic/u/%s/%s.png' % (user.username, filename))
+    setattr(user, filename, True)
+    session.commit()
 
 @auth.verify_password
 def verify_password(username, password):
@@ -70,7 +90,10 @@ class Match(Resource):
                 session.add(arena)
                 user.join_arena(arena)
                 session.commit()
-        return { 'id': user.arena_id, 'start': user.arena.closed, 'votes': user.votes_pouch }, SUCCESS
+        timeout = None
+        if hasattr(user.arena.timeout, 'isoformat'):
+            timeout =  user.arena.timeout.isoformat()
+        return { 'id': user.arena_id, 'start': user.arena.closed, 'votes': user.votes_pouch, 'timeout': timeout }, SUCCESS
 
 
 
@@ -85,12 +108,14 @@ class ArenaGallery(Resource):
         for user in arena.players:
             image = user.entry
             if image:
-                with open('dynamic/u/%s/entry.png' % user.username, "rb") as imageFile:
-                    image = base64.b64encode(imageFile.read())
+                image = get_dynamic_file_base64(user, 'entry')
+                # with open('dynamic/u/%s/entry.png' % user.username, "rb") as imageFile:
+                #     image = base64.b64encode(imageFile.read())
             avatar = user.avatar
             if avatar:
-                with open('dynamic/u/%s/avatar.png' % user.username, "rb") as imageFile:
-                    avatar = base64.b64encode(imageFile.read())
+                avatar = get_dynamic_file_base64(user, 'avatar')
+                # with open('dynamic/u/%s/avatar.png' % user.username, "rb") as imageFile:
+                #     avatar = base64.b64encode(imageFile.read())
 
             payload.append({ 'username': user.username,
                              'avatar': avatar,
@@ -130,7 +155,7 @@ class Player(Resource):
         for filename in self.FILES:
             payload[filename] = None
             if getattr(user,filename):
-                payload[filename] = self.get_dynamic_file_base64(user, filename)
+                payload[filename] = get_dynamic_file_base64(user, filename)
         payload['skill'] = user.skill
         ###############
         # PRIVATE INFO
@@ -149,8 +174,8 @@ class Player(Resource):
         if name != g.user.username:
             return "Url header mismatch", BAD_REQUEST
         for filename in self.FILES:
-            if filename in request.files:
-                self.set_dynamic_file(g.user, filename, request.files[filename])
+            if filename in request.form:
+                set_dynamic_file(g.user, filename, request.form[filename])
 
     def post(self, name): #Create user
         if not request.authorization:
@@ -181,17 +206,7 @@ class Player(Resource):
         session.commit()
         return "Success", SUCCESS
 
-    @staticmethod
-    def get_dynamic_file_base64(user, filename):
-        with open('dynamic/u/%s/%s.png' % (user.username, filename), "rb") as imageFile:
-            return base64.b64encode(imageFile.read())
 
-    @staticmethod
-    def set_dynamic_file(user, filename, file):
-        pathlib.Path("dynamic/u/%s" % user.username).mkdir(parents=True, exist_ok=True)
-        file.save('dynamic/u/%s/%s.png' % (user.username, filename))
-        user[filename] = True
-        session.commit()
 
 
 

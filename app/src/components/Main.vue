@@ -20,18 +20,17 @@
           </div>
           <div class="level-right">
             <div class="level-item">
-              <button class="button is-success" type="button" v-on:click="enterArena">Enter Arena</button>
+              <button class="button is-success" type="button" @click="enterArena">Enter Arena</button>
             </div>
           </div>
         </nav>
       </section>
 
-      <section class="hero-body">
+      <section class="hero-body" style="align-items: normal;">
         <router-view/>
       </section>
 
-      <section class="hero-footer">
-        Hello
+      <section class="hero-foot">
       </section>
 
     </section>
@@ -39,7 +38,7 @@
 </template>
 
 <script>
-import Avatar from 'vue-avatar';
+import Avatar from 'components/Avatar';
 
 export default {
   name: "Main-Page",

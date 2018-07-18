@@ -5,6 +5,8 @@
 </template>
 
 <script>
+import Avatar from 'components/Avatar';
+
 export default {
   name: "User-Profile"
 }

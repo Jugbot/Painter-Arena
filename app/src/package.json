@@ -14,6 +14,7 @@
   "license": "ISC",
   "devDependencies": {
     "@fortawesome/fontawesome-free": "^5.1.0",
+    "animate.css": "^3.6.1",
     "bootstrap-vue": "^2.0.0-rc.11",
     "buefy": "^0.6.6",
     "css-loader": "^0.28.11",
@@ -29,8 +30,11 @@
     "webpack-dev-server": "^3.1.4"
   },
   "dependencies": {
+    "bulma-divider": "^2.0.1",
+    "bulma-steps": "^2.2.1",
     "jquery": "^3.3.1",
     "vue": "^2.5.16",
+    "vue-persist": "^0.4.0",
     "vue-resource": "^1.5.1",
     "vue-router": "^3.0.1"
   }

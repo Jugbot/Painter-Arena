@@ -16,7 +16,7 @@ atexit.register(lambda: scheduler.shutdown())
 scheduler.start()
 
 VOTES_PER_PLAYER = 3
-ARENA_TIMEOUT_MINUTES = 5
+ARENA_TIMEOUT_MINUTES = 30
 
 
 class Arena(Base):
@@ -52,12 +52,13 @@ class Arena(Base):
 
     @classmethod
     def __declare_last__(cls):
-        event.listen(cls.closed, 'set', cls._set_timeout_event)
+        event.listen(cls.closed, 'set', cls._start_battle)
         event.listen(cls.timeout, 'set', cls._set_timeout_event)
         event.listen(cls.players, 'append', cls._on_player_add_event)
 
-    def _start_battle(self):
-        self.timeout = datetime.datetime.now() + datetime.timedelta(minutes=ARENA_TIMEOUT_MINUTES)
+    @staticmethod
+    def _start_battle(target, value, oldvalue, initiator):
+        target.timeout = datetime.datetime.now() + datetime.timedelta(minutes=ARENA_TIMEOUT_MINUTES)
 
     def _finish_battle(self):
         # Reflects skill level over the mean
@@ -76,11 +77,12 @@ class Arena(Base):
 
 
     @staticmethod
-    def _set_timeout_event(target, value, initiator):
+    def _set_timeout_event(target, value, oldvalue, initiator):
         scheduler.add_job(
             func=target._finish_battle,
-            trigger=value, #hmmm
-            id=target.id,
+            trigger="date",
+            run_date=value,
+            id=str(target.id),
             name='Event for the end of the Arena battle',
             replace_existing=True)
 
@@ -107,11 +109,14 @@ class User(Base):
     arena_id = Column(Integer, ForeignKey('arenas.id'))
     arena = relationship("Arena", back_populates="players")
     entry = Column(Boolean, default=False, nullable=False)
+    # entry_submitted = Column(Boolean, default=False, nullable=False)
     votes_pouch = Column(Integer, default = VOTES_PER_PLAYER, nullable = False)
     voted_users = relationship("User", post_update=True)
     votes_received = Column(Integer, default = 0, nullable = False)
 
     def toggle_vote(self, other):
+        if not self.entry:
+            return
         if other in self.voted_users:
             self.unvote(other)
         else:
@@ -126,12 +131,11 @@ class User(Base):
 
     def vote(self, other):
         if self.votes_pouch <= 0 and self not in other.votes_received:
-            return False
+            return
         self.votes_pouch -= 1
         self.voted_users.append(other)
         other.votes_received += 1
         self.arena.vote_count += 1
-        return True
 
     def join_arena(self, arena):
         arena.players.append(self)
@@ -148,45 +152,3 @@ class User(Base):
     def __repr__(self):
         return "<User(username='%s')>" % self.username
 
-'''
-from sortedcontainers import SortedList
-
-
-class Matchmaker:
-
-    def __init__(self, data=list()):
-        self.pool = SortedList(data)
-
-    def find(self, skillscore, radius):
-        if not self.pool:
-            return None
-
-        ind = self.pool.bisect_left(OpenArena(-1, skillscore))
-        right = self.pool[ind]
-        left = None if ind == 0 else self.pool[ind-1]
-        if left and right:
-            dl = skillscore - left.skill
-            dr = right.skill - skillscore
-            if dr < radius or dl < radius:
-                if dl > dr:
-                    return right.id
-                else:
-                    return left.id
-        elif left:
-            dl = skillscore - left.skill
-            if dl < radius:
-                return left.id
-        elif right:
-            dr = right.skill - skillscore
-            if dr < radius:
-                return right.id
-
-        return None
-
-    def add(self, id, skill):
-        self.pool.add(OpenArena(id, skill))
-
-    def remove(self, skill):
-        self.pool.remove(skill)
-
-#'''

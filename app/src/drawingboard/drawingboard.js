@@ -514,6 +514,10 @@ DrawingBoard.Board.prototype = {
 		return this.canvas.toDataURL("image/png");
 	},
 
+	getBlob: function(callback) {
+		return this.canvas.toBlob(callback, "image/png");
+	},
+
 	downloadImg: function() {
 		var img = this.getImg();
 		img = img.replace("image/png", "image/octet-stream");
@@ -1031,7 +1035,7 @@ DrawingBoard.Control.DrawingMode = DrawingBoard.Control.extend({
 
 		$.each(["pencil", "eraser", "filler"], $.proxy(function(k, value) {
 			if (this.opts[value]) {
-				this.$el.append('<button class="drawing-board-control-drawingmode-' + value + '-button" data-mode="' + value + '"></button>');
+				this.$el.append('<button class="button drawing-board-control-drawingmode-' + value + '-button" data-mode="' + value + '"></button>');
 			}
 		}, this));
 
@@ -1072,9 +1076,9 @@ DrawingBoard.Control.Navigation = DrawingBoard.Control.extend({
 
 	initialize: function() {
 		var el = '';
-		if (this.opts.back) el += '<button class="drawing-board-control-navigation-back">&larr;</button>';
-		if (this.opts.forward) el += '<button class="drawing-board-control-navigation-forward">&rarr;</button>';
-		if (this.opts.reset) el += '<button class="drawing-board-control-navigation-reset">&times;</button>';
+		if (this.opts.back) el += '<button class="button drawing-board-control-navigation-back">&larr;</button>';
+		if (this.opts.forward) el += '<button class="button drawing-board-control-navigation-forward">&rarr;</button>';
+		if (this.opts.reset) el += '<button class="button drawing-board-control-navigation-reset">&times;</button>';
 		this.$el.append(el);
 
 		if (this.opts.back) {
@@ -1257,7 +1261,7 @@ DrawingBoard.Control.Download = DrawingBoard.Control.extend({
 	name: 'download',
 
 	initialize: function() {
-		this.$el.append('<button class="drawing-board-control-download-button"></button>');
+		this.$el.append('<button class="button drawing-board-control-download-button"></button>');
 		this.$el.on('click', '.drawing-board-control-download-button', $.proxy(function(e) {
 			this.board.downloadImg();
 			e.preventDefault();

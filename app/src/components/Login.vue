@@ -39,7 +39,7 @@
                 </b-field>
                 <button class="button is-block is-large is-fullwidth"
                 :class="{ 'is-info': (!this.btn_state), 'is-success': this.btn_state }"
-                v-on:click="fetch_user()">
+                @click="fetch_user()">
                   {{this.message}}
                 </button>
               </form>
@@ -58,7 +58,7 @@
 
 <script>
 import Vue from 'vue';
-import Avatar from 'vue-avatar';
+import Avatar from 'components/Avatar';
 
 export default {
   name: 'Login-Page',
