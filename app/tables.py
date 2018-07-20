@@ -1,13 +1,19 @@
+import atexit
+import datetime
+
+from apscheduler.schedulers.background import BackgroundScheduler
+from passlib.apps import custom_app_context as pwd_context
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, event, func
+from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
-from sqlalchemy.orm import relationship
-from passlib.apps import custom_app_context as pwd_context
+from sqlalchemy.orm import relationship, sessionmaker, scoped_session
+from app import app
 
-import datetime
-import atexit
-from apscheduler.schedulers.background import BackgroundScheduler
 
+db_engine = create_engine(app.config["DATABASE_URI"])#, echo=True)
+Session = sessionmaker(bind=db_engine)
+session = scoped_session(Session)
 Base = declarative_base()
 
 scheduler = BackgroundScheduler()
@@ -15,8 +21,13 @@ scheduler.add_jobstore('sqlalchemy', url='mysql://root:Minecraft700@localhost/st
 atexit.register(lambda: scheduler.shutdown())
 scheduler.start()
 
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    session.remove()
+
 VOTES_PER_PLAYER = 3
-ARENA_TIMEOUT_MINUTES = 30
+ARENA_TIMEOUT_MINUTES = 1
+MAX_PLAYERS = 10
 
 
 class Arena(Base):
@@ -32,11 +43,11 @@ class Arena(Base):
 
     @hybrid_property
     def available(self):
-        return self.player_count < 10 and not self.closed
+        return self.player_count < MAX_PLAYERS and not self.closed
 
     @available.expression
     def available(self):
-        return (self.player_count < 10) & ~self.closed
+        return (self.player_count < MAX_PLAYERS) & ~self.closed
 
     @available.setter
     def available(self, val):
@@ -60,8 +71,14 @@ class Arena(Base):
     def _start_battle(target, value, oldvalue, initiator):
         target.timeout = datetime.datetime.now() + datetime.timedelta(minutes=ARENA_TIMEOUT_MINUTES)
 
+    @staticmethod
+    def _arena_timeout(id):
+        a = session.query(Arena).get(id)
+        a._finish_battle()
+
     def _finish_battle(self):
         # Reflects skill level over the mean
+        print(self)
         for user in self.players:
             skilldiff = self.skill - user.skill
             scorediff = user.votes_received - self.vote_count
@@ -72,14 +89,15 @@ class Arena(Base):
             user.votes_received = 0
             user.entry = False
         # TODO: Make less anticlimactic
-        self.session.remove(self)
-        self.session.commit()
+        session.delete(self) # MySQL server has gone away
+        session.commit()
 
 
     @staticmethod
     def _set_timeout_event(target, value, oldvalue, initiator):
         scheduler.add_job(
-            func=target._finish_battle,
+            func=Arena._arena_timeout,
+            args=[target.id],
             trigger="date",
             run_date=value,
             id=str(target.id),
@@ -152,3 +170,11 @@ class User(Base):
     def __repr__(self):
         return "<User(username='%s')>" % self.username
 
+if app.config["WIPE"]:
+    Base.metadata.drop_all(db_engine)
+    Base.metadata.create_all(db_engine)
+
+# a = Arena(skill=1000)
+# session.add(a)
+# session.commit()
+# a.closed = True

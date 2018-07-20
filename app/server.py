@@ -1,32 +1,18 @@
-from binascii import a2b_base64
-
-from flask import Flask, request, g, render_template, send_from_directory
-from flask_restful import Resource, Api
-from flask_httpauth import HTTPBasicAuth
-from flask_socketio import SocketIO, emit
-from flask_cors import CORS
-from sqlalchemy import create_engine, exists
-from sqlalchemy.orm import sessionmaker
+import base64
 import pathlib
 import shutil
-import os
 import time
-from threading import Lock
-from tables import Base, Arena, User
-from templates import *
-import base64
+from binascii import a2b_base64
 
-app = Flask(__name__)
-app.config["SECRET_KEY"] = 'the quick brown fox jumps over the lazy dog'
-app.config["DATABASE_URI"] = 'mysql://root:Minecraft700@localhost/store'
-api = Api(app)  # blueprint?
-db_engine = create_engine(app.config["DATABASE_URI"], echo=True)
-Session = sessionmaker(bind=db_engine)
-session = Session()
+from flask import Flask, request, g, render_template
+from flask_httpauth import HTTPBasicAuth
+from flask_restful import Resource, Api
+from sqlalchemy import exists
+
+from tables import session, Arena, User
+from app import api, app
+
 auth = HTTPBasicAuth()
-
-# Base.metadata.drop_all(db_engine)
-# Base.metadata.create_all(db_engine)
 
 SUCCESS = 200
 UNAUTHORIZED = 400 #401 # dumb browsers causing unwanted popups
@@ -73,7 +59,6 @@ class Match(Resource):
             start = time.time()
             progress = 0
             while progress < 1:
-                print(progress)
                 closest = session.query(Arena).filter(Arena.available).order_by(Arena.difference(user)).first()
                 if closest is None:
                     progress = 1
@@ -129,7 +114,6 @@ class ArenaGallery(Resource):
         if g.user.arena_id != id:
             return 'You are not in that Arena!', UNAUTHORIZED
         arena = session.query(Arena).filter_by(id=id).first()
-        print(request)
         votes = request.json
         for user in arena.players:
             if user.username in votes:
@@ -145,7 +129,6 @@ class Player(Resource):
             return "No such user", BAD_REQUEST
 
         authy = request.authorization
-        print(authy)
         authorized = False
         if authy and name == authy.username:
             authorized = verify_password(authy.username, authy.password)
@@ -232,7 +215,6 @@ def catch_all(path):
     # if app.debug:
     #     return request.get('http://localhost:8080/{}'.format(path)).text
     return render_template("index.html")
-
 
 if __name__ == '__main__':
     app.run(debug=True, use_debugger=False, use_reloader=False)
