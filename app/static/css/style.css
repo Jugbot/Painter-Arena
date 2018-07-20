@@ -119,6 +119,9 @@ span.is-pulled-right {
   width: 100vw;
 }
 .avatar[data-v-d87ab37e] {
+  padding: 0;
+  cursor: pointer;
+  border:none;
   margin-right: 0.5em;
 }
 
@@ -175,6 +178,29 @@ body {
   text-align: right;
   font-size: 100px;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

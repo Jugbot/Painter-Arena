@@ -6,9 +6,9 @@
         <nav class="level is-mobile box is-radiusless is-paddingless">
           <div class="level-left">
             <div class="level-item">
-              <figure class="avatar">
+              <button class="avatar" @click="enterProfile()">
                 <avatar :username="$root.user.username" :src="$root.user.avatar" :rounded='false'></avatar>
-              </figure>
+              </button>
             </div>
             <div class="level-item has-text-grey ">
               <span class='has-text-weight-light'> u/ </span>
@@ -20,14 +20,16 @@
           </div>
           <div class="level-right">
             <div class="level-item">
-              <button class="button is-success" type="button" @click="enterArena">Enter Arena</button>
+              <button class="button is-success" type="button" @click.prevent="enterArena">Enter Arena</button>
             </div>
           </div>
         </nav>
       </section>
 
       <section class="hero-body" style="align-items: normal;">
-        <router-view/>
+        <keep-alive>
+          <router-view/>
+        </keep-alive>
       </section>
 
       <section class="hero-foot">
@@ -43,7 +45,17 @@ import Avatar from 'components/Avatar';
 export default {
   name: "Main-Page",
   methods: {
+    enterProfile() {
+      this.$router.push({
+        name: "Profile"
+      });
+    },
     enterArena() {
+      if (this.$root.user.arena.id)
+        this.$router.push({
+          name: "Arena",
+          params: {'id': this.$root.user.arena.id}
+        });
       this.$http.get('api/match').then(response => { //, {params: {headers: {'Authorization':"Basic dXNlcm5hbWU6cGFzc3dvcmQ="}}}
           console.log(response.body);
           this.$root.user.arena = {...this.$root.user.arena, ...response.body};
@@ -74,6 +86,9 @@ export default {
     width: 100vw;
   }
   .avatar {
+    padding: 0;
+    cursor: pointer;
+    border:none;
     margin-right: 0.5em;
   }
 </style>

@@ -27,8 +27,10 @@ export default {
 
     timedelta() {
       var delta = this.timestamp - this.now;
-      if (delta < 0)
+      if (delta < 0) {
+        this.$emit('timeout');
         return 0;
+      }
       return delta
     },
 

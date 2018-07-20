@@ -5,7 +5,7 @@
         <div class="container has-text-centered">
           <h1 class="title is-size-1">Arena #{{$root.user.arena.id}}</h1>
           <h2 class="subtitle" v-if='$root.user.arena.start'>
-            <countdown :date='$root.user.arena.timeout'></countdown>
+            <countdown :date='$root.user.arena.timeout' :timeout="end()"></countdown>
           </h2>
         </div>
       </div>
@@ -70,10 +70,11 @@
 
                 <div class='grid_item box display-board animated fadeIn' :style="{ 'background-image':'url(' + p.image + ')' }" @click.self="expand(p.image)" v-for="p in sorted_players" v-if='p.image'>
                   <b-field class="upvote-header" v-if='p.username != $root.user.username'>
+                    <!-- <div class="control"><label tabindex="0" class="b-checkbox checkbox button is-success"><i class="fas fa-check fa-sm"></i> <input type="checkbox" value="user6"></label></div> -->
                     <b-checkbox-button
                       v-model="$root.user.arena.voted_users"
                       :native-value='p.username'
-                      @input="vote(p, $event)"
+                      @input.native="vote(p, $event)"
                       type="is-success">
                       <i class="fas fa-check fa-sm"></i>
                     </b-checkbox-button>
@@ -150,6 +151,11 @@ export default {
     }
   },
   methods: {
+    end() {
+      this.$router.push({
+        name: "Profile"
+      });
+    },
     expand(image) {
       this.$modal.open({
             parent: this,
@@ -175,7 +181,7 @@ export default {
     // FIXME: fires three times
     vote(player, state) {
       console.log(state);
-      if (state.length) {
+      if (state.target.checked) {
         if (this.$root.user.arena.votes <= 0) return;
         this.$root.user.arena.votes -= 1;
         player.votes += 1;
