@@ -27,6 +27,8 @@ export default {
   name: "User-Profile",
   components: {
     Avatar
+  },
+  created() {
   }
 }
 </script>

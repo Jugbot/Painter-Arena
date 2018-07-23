@@ -63,16 +63,6 @@ div[data-v-62891bd9] {
   width: 200px;
   height: 200px;
 }
-
-/* .white-border {
-  border-color: #dbdbdb;
-  border-style: solid;
-  border-width: 1px;
-}
-
-span.is-pulled-right {
-  margin-left: 1rem;
-} */
 .b-checkbox.checkbox.button {
     border-radius: 0px;
     border-top-right-radius: 4px !important;
@@ -178,10 +168,6 @@ body {
   text-align: right;
   font-size: 100px;
 }
-
-
-
-
 
 
 

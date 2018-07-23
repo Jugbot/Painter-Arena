@@ -27,9 +27,9 @@
       </section>
 
       <section class="hero-body" style="align-items: normal;">
-        <keep-alive>
+        <!-- <keep-alive> -->
           <router-view/>
-        </keep-alive>
+        <!-- </keep-alive> -->
       </section>
 
       <section class="hero-foot">

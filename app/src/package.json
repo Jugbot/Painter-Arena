@@ -36,6 +36,8 @@
     "vue": "^2.5.16",
     "vue-persist": "^0.4.0",
     "vue-resource": "^1.5.1",
-    "vue-router": "^3.0.1"
+    "vue-router": "^3.0.1",
+    "vue-socket.io": "^2.1.1-b",
+    "vue-socket.io-extended": "^3.0.0"
   }
 }

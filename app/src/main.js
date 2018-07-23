@@ -8,10 +8,14 @@ import '@fortawesome/fontawesome-free/css/all.css'
 import 'animate.css/animate.css'
 import 'bulma-steps/dist/css/bulma-steps.min.css'
 import VuePersist from 'vue-persist'
+import VueSocketio from 'vue-socket.io-extended'
+import io from 'socket.io-client'
 
-Vue.use(Buefy, {defaultIconPack: 'fas'})
+
+Vue.use(Buefy, {defaultIconPack: 'fas'});
 Vue.use(Resource);
-Vue.use(VuePersist)
+// Vue.use(VuePersist);
+Vue.use(VueSocketio, io('/sock'));
 
 new Vue({
   router: router,
@@ -41,6 +45,14 @@ new Vue({
       }
     }
   },
-  // persist: ['user'],
+  sockets: {
+    connect() {
+      console.log("connected");
+    },
+    disconnect() {
+      console.log("disconnected");
+    }
+  },
+  // persist: ['token'],
   template: '<App/>'
 });

@@ -9,6 +9,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 from sqlalchemy.orm import relationship, sessionmaker, scoped_session
 from app import app
+from sockets import arena_room
 
 
 db_engine = create_engine(app.config["DATABASE_URI"])#, echo=True)
@@ -26,7 +27,7 @@ def shutdown_session(exception=None):
     session.remove()
 
 VOTES_PER_PLAYER = 3
-ARENA_TIMEOUT_MINUTES = 1
+ARENA_TIMEOUT_MINUTES = 10
 MAX_PLAYERS = 10
 
 
@@ -89,6 +90,7 @@ class Arena(Base):
             user.votes_received = 0
             user.entry = False
         # TODO: Make less anticlimactic
+        arena_room.close_room(self.id, arena_room.namespace)
         session.delete(self) # MySQL server has gone away
         session.commit()
 

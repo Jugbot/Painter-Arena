@@ -5,7 +5,7 @@
         <div class="container has-text-centered">
           <h1 class="title is-size-1">Arena #{{$root.user.arena.id}}</h1>
           <h2 class="subtitle" v-if='$root.user.arena.start'>
-            <countdown :date='$root.user.arena.timeout' :timeout="end()"></countdown>
+            <countdown :date='$root.user.arena.timeout' @timeout="end()"></countdown>
           </h2>
         </div>
       </div>
@@ -121,12 +121,14 @@ import Avatar from 'components/Avatar';
 import ExpandedImageModal from 'components/ExpandedImageModal'
 import Countdown from 'components/Countdown'
 
+
 export default {
   name: 'Arena',
   data() {
     return {
       players: [],
       board: null,
+      id: -1
     }
   },
   computed: {
@@ -152,6 +154,9 @@ export default {
   },
   methods: {
     end() {
+      this.$http.get('api/u/' + this.$root.user.username).then(response => {
+        this.$root.user = {...this.$root.user, ...response.body};
+      });
       this.$router.push({
         name: "Profile"
       });
@@ -178,7 +183,6 @@ export default {
         console.log("Error" + error.body);
       });
     },
-    // FIXME: fires three times
     vote(player, state) {
       console.log(state);
       if (state.target.checked) {
@@ -200,6 +204,7 @@ export default {
       });
     },
     update_players() {
+      console.log('updating players');
       this.$http.get('api/arena/' + this.id).then(response => {
         if (response.ok) {
           this.players = response.body;
@@ -207,12 +212,40 @@ export default {
       }, error => {
         console.log(error.status + "  " + error.body);
       });
+    },
+    //SOCKETS
+    player_join(data) {
+      console.log('join');
+      if (data.username != this.$root.user.username)
+        this.update_players(); //inefficient but it will do
+    },
+    entry_update(data) {
+      console.log('entry');
+      p = this.players.find(o => o.username == data.username);
+      p.entry = data.entry;
+    },
+    votes_changed(data) {
+      console.log('votes');
+      p = this.players.find(o => o.username == data.username);
+      p.votes = data.votes;
     }
   },
   created() {
+    // if (this.id != this.$route.params.id)
+    //   this.players = [];
     this.id = this.$route.params.id;
-
+    this.$socket.emit('join', this.$root.user.username, this.id);
     this.update_players();
+
+    this.$options.sockets.player_join = this.player_join;
+    this.$options.sockets.entry_update = this.entry_update;
+    this.$options.sockets.votes_changed = this.votes_changed;
+
+  },
+  onBeforeDestroy() {
+    delete this.$options.sockets.player_join;
+    delete this.$options.sockets.entry_update;
+    delete this.$options.sockets.votes_changed;
   },
   mounted() {
     this.board = new DrawingBoard.Board('simple-board', {
@@ -224,6 +257,7 @@ export default {
 
     this.board.setImg(this.$root.user.entry);
   },
+  // persist: ['players', 'id'],
   components: {
     Avatar,
     Countdown
@@ -236,16 +270,6 @@ export default {
   width: 200px;
   height: 200px;
 }
-
-/* .white-border {
-  border-color: #dbdbdb;
-  border-style: solid;
-  border-width: 1px;
-}
-
-span.is-pulled-right {
-  margin-left: 1rem;
-} */
 
 .b-checkbox.checkbox.button {
     border-radius: 0px;
@@ -294,52 +318,3 @@ span.is-pulled-right {
   background: linear-gradient(rgba(36,38,38,0) 0,rgba(36,38,38,.75) 100%);
 }
 </style>
-
-
-<!-- <div class="level">
-  <div class="level-left">
-    <div class="level-item">
-      <h1 class="title is-size-1">Arena #{{$root.user.arena.id}}</h1>
-    </div>
-  </div>
-  <div class="level-right">
-    <div class="level-item">
-      <div class="has-text-right">
-        <p>
-          state
-          <span class="is-pulled-right">{{this.arena_state[0]}}</span>
-        </p>
-        <p>
-          votes
-          <span class="is-pulled-right">{{$root.user.arena.votes}}</span>
-        </p>
-        <p class="has-text-centered" v-if='$root.user.arena.active'>
-          timeout <br>
-          <Countdown :date='$root.user.arena.timeout'></Countdown>
-        </p>
-      </div>
-    </div>
-  </div>
-</div> -->
-<!-- <b-field grouped group-multiline style='display: flex; justify-content: center;'>
-  <div class="control">
-    <b-taglist attached>
-      <b-tag size="is-medium">state</b-tag>
-      <b-tag size="is-medium" :type="arena_state[1]">{{this.arena_state[0]}}</b-tag>
-    </b-taglist>
-  </div>
-  <div class="control">
-    <b-taglist attached>
-      <b-tag size="is-medium">remaining votes</b-tag>
-      <b-tag size="is-medium" type="is-primary">{{$root.user.arena.votes}}</b-tag>
-    </b-taglist>
-  </div>
-  <div class="control" v-if='$root.user.arena.active'>
-    <b-taglist attached>
-      <b-tag size="is-medium">time remaining</b-tag>
-      <b-tag size="is-medium" type="is-dark">
-        <Countdown :date='$root.user.arena.timeout'></Countdown>
-      </b-tag>
-    </b-taglist>
-  </div>
-</b-field> -->
