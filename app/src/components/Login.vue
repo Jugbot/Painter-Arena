@@ -37,10 +37,11 @@
                     Remember me
                   </label>
                 </b-field>
-                <button class="button is-block is-large is-fullwidth"
+                <button class="button is-block is-large is-fullwidth" :disabled='!this.valid()'
                 :class="{ 'is-info': (!this.btn_state), 'is-success': this.btn_state }"
                 @click="fetch_user()">
                   {{this.message}}
+                  <b-loading :active='this.pending' :is-full-page='false'></b-loading>
                 </button>
               </form>
             </div>
@@ -76,8 +77,9 @@ export default {
       Vue.http.headers.common['Authorization'] = "Basic " + btoa(tok);
     },
     fetch_user(protocol = this.method) {
+      this.pending = true;
       this._make_basic_auth();
-      this.$http[protocol]('api/u/' + this.$root.user.username).then(response => {
+      this.$http[protocol]('api/u/' + this.$root.user.username, JSON.stringify([])).then(response => {
         if (response.body.authorized) {
           this.$toast.open({
                       message: 'Welcome ' + this.$root.user.username + "!",
@@ -85,16 +87,18 @@ export default {
                       position: 'is-bottom'
                   });
           this.$root.user = {...this.$root.user, ...response.body};
-          setTimeout(() => {
+          // setTimeout(() => {
             this.$router.push({
               name: 'Profile',
               params: {
                 id: this.$root.user.username
               }
             });
-          }, 1000);
+          // }, 1000);
         }
+        this.pending = false;
       }, error => {
+        this.pending = false;
         console.log(error.status + "  " + error.body);
       });
     },
@@ -104,20 +108,31 @@ export default {
     login() {
       this.fetch_user('get');
     },
-    valid_user() {
-      this.$http.get('api/u/' + this.$root.user.username).then(response => {
+    valid_username() {
+      return this.$root.user.username.length > 0
+    },
+    valid_password() {
+      return this.$root.user.password.length >= 6
+    },
+    valid() {
+      return this.valid_username() && this.valid_password()
+    },
+    user_exists() {
+      this.$http.get('api/u/' + this.$root.user.username, ['entry',]).then(response => {
         this.message = "Login";
         this.method = "get";
         this.btn_state = false;
+        this.$root.user.entry = response.body.entry;
       }, error => {
         this.message = "Register";
         this.method = 'post';
         this.btn_state = true;
+        this.$root.user.entry = false;
       });
     }
   },
   updated() { //// FIXME: plz
-    this.valid_user();
+    this.user_exists();
   },
   components: {
     Avatar

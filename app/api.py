@@ -141,22 +141,64 @@ class Player(Resource):
         if authy and name == authy.username:
             authorized = verify_password(authy.username, authy.password)
         payload = {'authorized': authorized}
+
+
         ##############
         # PUBLIC INFO
-        for filename in self.FILES:
-            payload[filename] = None
-            if getattr(user,filename):
-                payload[filename] = get_dynamic_file_base64(user, filename)
-        payload['skill'] = user.skill
+        def get_skill():
+            return user.skill
+
+        def get_entry():
+            if getattr(user, 'entry'):
+                return get_dynamic_file_base64(user, 'entry')
+
+        def get_avatar():
+            if getattr(user, 'entry'):
+                return get_dynamic_file_base64(user, 'avatar')
+
+
         ###############
         # PRIVATE INFO
-        if authorized:
-            if user.arena_id:
-                payload['arena'] = {
+        def get_arena():
+            if authorized and user.arena_id:
+                return {
                     'id': user.arena_id,
                     'start': user.arena.closed,
                     'votes': user.votes_pouch,
                     'voted_users': [u.username for u in user.voted_users]}
+            return {}
+
+        def get_notifications():
+            if authorized:
+                return [{'message': item.message, 'type': item.type} for item in user.notifications ]
+
+        gets = {
+            'entry': get_entry,
+            'avatar': get_avatar,
+            'skill': get_skill,
+            'notifications': get_notifications,
+            'arena': get_arena
+        }
+
+        item_requests = request.json
+        if not item_requests: #no params fetches all
+            item_requests = list(gets.keys())
+        for item in item_requests:
+            payload[item] = gets[item]()
+
+        # for filename in self.FILES:
+        #     payload[filename] = None
+        #     if getattr(user,filename):
+        #         payload[filename] = get_dynamic_file_base64(user, filename)
+        # payload['skill'] = user.skill
+        # if authorized:
+        #     payload['notifications'] = [{'message': item.message, 'type': item.type} for item in user.notifications ]
+        #     if user.arena_id:
+        #         payload['arena'] = {
+        #             'id': user.arena_id,
+        #             'start': user.arena.closed,
+        #             'votes': user.votes_pouch,
+        #             'voted_users': [u.username for u in user.voted_users]}
         return payload, SUCCESS
 
     @auth.login_required
@@ -176,6 +218,8 @@ class Player(Resource):
         password = request.authorization.password
         if not self._valid_password(password):
             return "Password needs to be longer than 5 characters", BAD_REQUEST
+        if not self._valid_username(name):
+            return "Username invalid", BAD_REQUEST
         if session.query(exists().where(User.username == name)).scalar():
             return "Username %s in use" % name, CONFLICT
         u = User(username=name)
@@ -187,6 +231,12 @@ class Player(Resource):
     @staticmethod
     def _valid_password(password):
         return len(password) >= 6
+
+
+    @staticmethod
+    def _valid_username(name): #TODO: Revisit on deployment
+        return name # name[0] != ' ' and name[-1] != ' '
+
 
     @auth.login_required
     def delete(self, name):
@@ -203,8 +253,6 @@ class PlayerCollection(Resource):
     def get(self, name):
         amount = request.args['len'] or 10  # amount of images to fetch
         pathlib.Path("dynamic/u/%s/collection" % name).mkdir(parents=True, exist_ok=True)
-
-
 
 
 api.add_resource(Player, '/api/u/<string:name>')
