@@ -30,7 +30,6 @@ VOTES_PER_PLAYER = 3
 ARENA_TIMEOUT_MINUTES = 10
 MAX_PLAYERS = 10
 
-
 class Arena(Base):
     __tablename__ = 'arenas'
 
@@ -133,6 +132,7 @@ class User(Base):
     votes_pouch = Column(Integer, default = VOTES_PER_PLAYER, nullable = False)
     voted_users = relationship("User", post_update=True)
     votes_received = Column(Integer, default = 0, nullable = False)
+    notifications = relationship("Notification")
 
     def toggle_vote(self, other):
         if not self.entry:
@@ -171,6 +171,14 @@ class User(Base):
 
     def __repr__(self):
         return "<User(username='%s')>" % self.username
+
+class Notification(Base):
+    __tablename__ = 'notifications'
+
+    id = Column(Integer, primary_key=True)
+    parent_id = Column(Integer, ForeignKey('users.id'))
+    type = Column(Integer, default=0)
+    message = Column(String(512))
 
 if app.config["WIPE"]:
     Base.metadata.drop_all(db_engine)

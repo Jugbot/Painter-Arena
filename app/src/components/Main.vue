@@ -20,6 +20,27 @@
           </div>
           <div class="level-right">
             <div class="level-item">
+              <b-dropdown>
+                <button class="button is-white is-rounded" slot='trigger'>
+                  <b-icon onloadedmetadata=""
+                    icon='bell'
+                    custom-size='fa-lg'>
+                  </b-icon>
+                  <b-tag rounded
+                  type='is-danger'
+                  v-if='this.$root.user.notifications.length'>
+                    {this.$root.user.notifications.length}}
+                  </b-tag>
+                </button>
+                <b-dropdown-item custom v-if='this.$root.user.notifications.length == 0' class="has-text-grey-light has-text-centered	">
+                  Nothing here!
+                </b-dropdown-item>
+                <b-dropdown-item v-for='item in this.$root.user.notifications'>
+                  {{item.messsage}}
+                </b-dropdown-item>
+              </b-dropdown>
+            </div>
+            <div class="level-item">
               <button class="button is-success" type="button" @click.prevent="enterArena">Enter Arena</button>
             </div>
           </div>
@@ -82,6 +103,20 @@ export default {
 </script>
 
 <style scoped lang="css">
+  .button .icon:first-child {
+    margin-left: calc(-0.375em - 1px);
+    margin-right: calc(-0.375em - 1px);
+  }
+  .tag {
+    position: absolute;
+    top: calc(100% - ( 1em / 2 ));
+    left: calc(100% - ( 1em / 2 ));
+    font-size: .5625rem;
+    line-height: .375rem;
+  }
+  .button.is-white {
+    color: inherit;
+  }
   .header {
     width: 100vw;
   }

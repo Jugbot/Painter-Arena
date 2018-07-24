@@ -37,6 +37,7 @@ new Vue({
         avatar: '',
         entry: '',
         skill: '',
+        notifications: [],
         arena: {
           id: '',
           start: false,
