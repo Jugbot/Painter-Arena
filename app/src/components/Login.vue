@@ -32,16 +32,15 @@
                 </b-field>
                 <b-field>
                   <label class="checkbox">
-                    <b-checkbox>
+                    <b-checkbox v-model="tokenize">
                     </b-checkbox>
                     Remember me
                   </label>
                 </b-field>
                 <button class="button is-block is-large is-fullwidth" :disabled='!this.valid()'
-                :class="{ 'is-info': (!this.btn_state), 'is-success': this.btn_state }"
+                :class="{ 'is-info': (!this.btn_state), 'is-success': this.btn_state, 'is-loading': this.pending }"
                 @click="fetch_user()">
                   {{this.message}}
-                  <b-loading :active='this.pending' :is-full-page='false'></b-loading>
                 </button>
               </form>
             </div>
@@ -65,6 +64,7 @@ export default {
   name: 'Login-Page',
   data() {
     return {
+      tokenize: true,
       btn_state: false,
       method: "get",
       message: 'Login',
@@ -79,13 +79,14 @@ export default {
     fetch_user(protocol = this.method) {
       this.pending = true;
       this._make_basic_auth();
-      this.$http[protocol]('api/u/' + this.$root.user.username, JSON.stringify([])).then(response => {
+      this.$http[protocol]('api/u/' + this.$root.user.username, {'params': {'token': this.tokenize}}).then(response => {
         if (response.body.authorized) {
           this.$toast.open({
                       message: 'Welcome ' + this.$root.user.username + "!",
                       type: 'is-success',
                       position: 'is-bottom'
                   });
+          this.$root.user.password = '';
           this.$root.user = {...this.$root.user, ...response.body};
           // setTimeout(() => {
             this.$router.push({
@@ -118,7 +119,7 @@ export default {
       return this.valid_username() && this.valid_password()
     },
     user_exists() {
-      this.$http.get('api/u/' + this.$root.user.username, ['entry',]).then(response => {
+      this.$http.get('api/u/' + this.$root.user.username, {'params': {'items':['entry',]}}).then(response => {
         this.message = "Login";
         this.method = "get";
         this.btn_state = false;

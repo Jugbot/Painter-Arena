@@ -9,7 +9,8 @@ export default {
   name: "countdown",
   props : {
     date : {
-      type: String
+      type: String,
+      required: true
     }
   },
 
@@ -28,6 +29,7 @@ export default {
     timedelta() {
       var delta = this.timestamp - this.now;
       if (delta < 0) {
+        console.log(delta);
         this.$emit('timeout');
         return 0;
       }

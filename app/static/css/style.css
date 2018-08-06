@@ -13,20 +13,20 @@
 
 
 
-.hero.is-success[data-v-3c6bbea2] {
+.hero.is-success[data-v-6d5ce248] {
   background: #F2F6FA;
 }
-.box[data-v-3c6bbea2] {
+.box[data-v-6d5ce248] {
   margin-top: 5rem;
 }
-.avatar[data-v-3c6bbea2] {
+.avatar[data-v-6d5ce248] {
   margin-top: -70px;
   padding-bottom: 20px;
   width: 100%;
   display: flex;
   justify-content: center;
 }
-.avatar div[data-v-3c6bbea2] {
+.avatar div[data-v-6d5ce248] {
   border: 5px solid #fff;
   background: #fff;
   border-radius: 50%;
@@ -53,15 +53,21 @@
 
 
 
-div[data-v-d9693484] {
+div[data-v-6bffcf62] {
   display: inline-block;
   width: 2em;
 }
 
 
 #simple-board {
-  width: 200px;
-  height: 200px;
+  width: 256px;
+  height: 256px;
+}
+.corner-button {
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 9;
 }
 .b-checkbox.checkbox.button {
     border-radius: 0px;
@@ -104,25 +110,46 @@ div[data-v-d9693484] {
   background: linear-gradient(rgba(36,38,38,0) 0,rgba(36,38,38,.75) 100%);
 }
 
-
-.button .icon[data-v-59fca19e]:first-child {
-  margin-left: calc(-0.375em - 1px);
-  margin-right: calc(-0.375em - 1px);
+/* Responsive Tabs */
+@media screen and (max-width: 768px) {
+li:not(.is-active) > a > span:not(.icon) {
+    visibility: hidden;
+    position:  absolute;
 }
-.tag[data-v-59fca19e] {
+nav.tabs li:not(.is-active) {
+    -webkit-box-flex: 0;
+    -ms-flex-positive: 0;
+    flex-grow: 0;
+    -ms-flex-negative: 1;
+    flex-shrink: 1;
+}
+.tabs .icon {
+    margin-left: 0.5em;
+}
+}
+.tabs li {
+  transition: flex-grow 1s ease;
+}
+
+
+.tag[data-v-2a7b5e8a] {
   position: absolute;
-  top: calc(100% - ( 1em / 2 ));
-  left: calc(100% - ( 1em / 2 ));
+  left: calc(100% - 1em);
+  bottom: -0.5em;
   font-size: .5625rem;
   line-height: .375rem;
 }
-.button.is-white[data-v-59fca19e] {
+.dropdown-item[data-v-2a7b5e8a] {
+  white-space: normal;
+  padding-bottom: 1rem;
+}
+.button.is-white[data-v-2a7b5e8a] {
   color: inherit;
 }
-.header[data-v-59fca19e] {
+.header[data-v-2a7b5e8a] {
   width: 100vw;
 }
-.avatar[data-v-59fca19e] {
+.avatar[data-v-2a7b5e8a] {
   padding: 0;
   cursor: pointer;
   border:none;
@@ -219,6 +246,71 @@ body {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.slight-white {
+   color: rgba(255,255,255,0.2);
+}
+.big-button {
+  width: 10em !important;
+  height: 10em !important;
+}
+#edit-icon-wrapper {
+  position:absolute;
+  right:5px;
+  top:5px;
+  text-shadow: 0px 0px 1px #000;
+  display:none;
+}
+#avatar-wrapper:hover #edit-icon-wrapper {
+  display:block;
+}
+#avatar-wrapper {
+  position: relative;
+}
+#bottom-button, .drawing-board-controls {
+  position: absolute;
+  top:100%;
+}
 
 .is-noscroll {
   position: fixed;

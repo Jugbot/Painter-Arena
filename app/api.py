@@ -1,61 +1,36 @@
-import base64
 import pathlib
 import shutil
 import time
-from binascii import a2b_base64
 
-from flask import request, g, Blueprint
-from flask_httpauth import HTTPBasicAuth
+from flask import request, g, Blueprint, Response
 from flask_restful import Resource, Api
 from sqlalchemy import exists
 
-from tables import session, Arena, User
 from app import app
 from sockets import arena_room
+from tables import session, Arena, User
+from customauth import auth, basic_auth
 
-auth = HTTPBasicAuth()
+
 api_routes = Blueprint('api', __name__)
-api = Api(api_routes)
+api = Api(api_routes, prefix='/api')
 
 SUCCESS = 200
-UNAUTHORIZED = 400 #401 # dumb browsers causing unwanted popups
-BAD_REQUEST = 402
+UNAUTHORIZED = 401
+BAD_REQUEST = 400
 INTERNAL_ERROR = 500
 INVALID_MEDIA = 415
 CONFLICT = 409
 
-# TODO: Look into file security
-def get_dynamic_file_base64(user, filename):
-    with open('dynamic/u/%s/%s.png' % (user.username, filename), "rb") as imageFile:
-        return 'data:image/png;base64,%s' % base64.b64encode(imageFile.read()).decode()
-
-def set_dynamic_file(user, filename, file):
-    pathlib.Path("dynamic/u/%s" % user.username).mkdir(parents=True, exist_ok=True)
-
-    data = file.split(',')[1]
-    binary_data = a2b_base64(data)
-
-    fd = open('dynamic/u/%s/%s.png' % (user.username, filename), 'wb')
-    fd.write(binary_data)
-    fd.close()
-
-    # file.save('dynamic/u/%s/%s.png' % (user.username, filename))
-    setattr(user, filename, True)
-    session.commit()
-
-@auth.verify_password
-def verify_password(username, password):
-    u = session.query(User).filter_by(username=username).first()
-    if not u or not u.verify_password(password):
-        return False
-    g.user = u
-    return True
-
-
 class Match(Resource):
+    MIN_PLAYERS = 2
+    MAX_PLAYERS = 20
+    MIN_TIME = 60000
+
     @auth.login_required
-    def get(self):
+    def post(self):
         user = g.user
+
         if not user.arena_id: # in battle
             min_range, max_range = 50, 1000
             interval = 10
@@ -75,15 +50,35 @@ class Match(Resource):
                     break
             else:
                 arena = user.create_arena()
+                options = request.get_json() or dict()
+                if 'prompt' in options:
+                    arena.prompt = options['prompt']
+                if 'max_players' in options \
+                        and options['max_players'] \
+                        and self.MIN_PLAYERS <= options['max_players'] <= self.MAX_PLAYERS :
+                    arena.max_players = options['max_players']
+                if 'timeout_delta' in options \
+                        and options['timeout_delta'] \
+                        and options['timeout_delta'] >= self.MIN_TIME:
+                    arena.timeout_delta = options['timeout_delta']
                 session.add(arena)
+                session.commit() #commit inits defaults
                 user.join_arena(arena)
                 session.commit()
         timeout = None
         if hasattr(user.arena.timeout, 'isoformat'):
             timeout =  user.arena.timeout.isoformat()
-        arena_room.emit_player_join(user.username, user.arena_id)
+
+        arena_room.emit_player_join(user)
         return { 'id': user.arena_id, 'start': user.arena.closed, 'votes': user.votes_pouch, 'timeout': timeout }, SUCCESS
 
+    @auth.login_required
+    def delete(self):
+        user = g.user
+        arena_room.emit_player_leave(user)
+        user.leave_arena()
+        session.commit()
+        return "Success", SUCCESS
 
 
 class ArenaGallery(Resource):
@@ -94,111 +89,73 @@ class ArenaGallery(Resource):
         arena = session.query(Arena).filter_by(id=id).first()
         if not arena:
             return BAD_REQUEST
-        payload = []
+        payload = {}
         voted_users = g.user.voted_users
         for user in arena.players:
-            image = user.entry
-            if image:
-                image = get_dynamic_file_base64(user, 'entry')
+            entry = user.entry
+            if entry:
+                entry = user.get_dynamic_file_base64('entry')
                 # with open('dynamic/u/%s/entry.png' % user.username, "rb") as imageFile:
                 #     image = base64.b64encode(imageFile.read())
             avatar = user.avatar
             if avatar:
-                avatar = get_dynamic_file_base64(user, 'avatar')
+                avatar = user.get_dynamic_file_base64('avatar')
                 # with open('dynamic/u/%s/avatar.png' % user.username, "rb") as imageFile:
                 #     avatar = base64.b64encode(imageFile.read())
 
-            payload.append({ 'username': user.username,
+            payload[user.username] = {
                              'avatar': avatar,
-                             'image': image,
+                             'entry': entry,
                              'votes': user.votes_received
-                             })
-        return payload
+                             }
+        return payload, SUCCESS
 
     @auth.login_required
     def put(self, id): # Updates votes only, set images in Player.update()
         if g.user.arena_id != id:
             return 'You are not in that Arena!', UNAUTHORIZED
         arena = session.query(Arena).filter_by(id=id).first()
-        votes = request.json
+        votes = request.get_json()
+        print(votes)
         for user in arena.players:
             if user.username in votes:
                 g.user.toggle_vote(user)
-                arena_room.emit_votes_changed(user.username, user.votes_received, user.arena_id)
+                session.commit()
+                arena_room.emit_votes_changed(user)
 
 
 
 class Player(Resource):
     FILES = ['entry', 'avatar']
 
+    @auth.login_optional
     def get(self, name):
-        user = session.query(User).filter_by(username=name).first()
+        user = g.user if hasattr(g, 'user') else session.query(User).filter_by(username=name).first()
+        authorized = g.authorized if hasattr(g, 'authorized') else False
         if not user:
             return "No such user", BAD_REQUEST
 
-        authy = request.authorization
-        authorized = False
-        if authy and name == authy.username:
-            authorized = verify_password(authy.username, authy.password)
         payload = {'authorized': authorized}
+        if authorized and request.args.get('token'):
+            payload['token'] = user.get_token()
 
 
-        ##############
-        # PUBLIC INFO
-        def get_skill():
-            return user.skill
-
-        def get_entry():
-            if getattr(user, 'entry'):
-                return get_dynamic_file_base64(user, 'entry')
-
-        def get_avatar():
-            if getattr(user, 'entry'):
-                return get_dynamic_file_base64(user, 'avatar')
-
-
-        ###############
-        # PRIVATE INFO
-        def get_arena():
-            if authorized and user.arena_id:
-                return {
-                    'id': user.arena_id,
-                    'start': user.arena.closed,
-                    'votes': user.votes_pouch,
-                    'voted_users': [u.username for u in user.voted_users]}
-            return {}
-
-        def get_notifications():
-            if authorized:
-                return [{'message': item.message, 'type': item.type} for item in user.notifications ]
 
         gets = {
-            'entry': get_entry,
-            'avatar': get_avatar,
-            'skill': get_skill,
-            'notifications': get_notifications,
-            'arena': get_arena
+            'entry': user.get_entry,
+            'avatar': user.get_avatar,
+            'skill': user.get_skill,
+            'notifications': lambda: user.get_notifications() if authorized else [],
+            'arena':  lambda: user.get_arena() if authorized else {}
         }
 
-        item_requests = request.json
+        item_requests = request.args.get('items')
         if not item_requests: #no params fetches all
             item_requests = list(gets.keys())
         for item in item_requests:
             payload[item] = gets[item]()
 
-        # for filename in self.FILES:
-        #     payload[filename] = None
-        #     if getattr(user,filename):
-        #         payload[filename] = get_dynamic_file_base64(user, filename)
-        # payload['skill'] = user.skill
-        # if authorized:
-        #     payload['notifications'] = [{'message': item.message, 'type': item.type} for item in user.notifications ]
-        #     if user.arena_id:
-        #         payload['arena'] = {
-        #             'id': user.arena_id,
-        #             'start': user.arena.closed,
-        #             'votes': user.votes_pouch,
-        #             'voted_users': [u.username for u in user.voted_users]}
+
         return payload, SUCCESS
 
     @auth.login_required
@@ -207,9 +164,10 @@ class Player(Resource):
             return "Url header mismatch", BAD_REQUEST
         for filename in self.FILES:
             if filename in request.form:
-                set_dynamic_file(g.user, filename, request.form[filename])
+                g.user.set_dynamic_file(filename, request.form[filename])
                 if filename == 'entry':
-                    arena_room.emit_entry_update(name, request.form[filename], g.user.arena_id)
+                    arena_room.emit_entry_update(g.user, request.form[filename])
+        session.commit()
 
     def post(self, name): #Create user
         if not request.authorization:
@@ -255,7 +213,9 @@ class PlayerCollection(Resource):
         pathlib.Path("dynamic/u/%s/collection" % name).mkdir(parents=True, exist_ok=True)
 
 
-api.add_resource(Player, '/api/u/<string:name>')
-api.add_resource(ArenaGallery, '/api/arena/<int:id>')
-api.add_resource(Match, '/api/match')
-app.register_blueprint(api_routes)
+api.add_resource(Player, '/u/<string:name>')
+api.add_resource(ArenaGallery, '/arena/<int:id>')
+api.add_resource(Match, '/match')
+
+
+

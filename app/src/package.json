@@ -32,6 +32,7 @@
   "dependencies": {
     "bulma-divider": "^2.0.1",
     "bulma-steps": "^2.2.1",
+    "deepmerge": "^2.1.1",
     "jquery": "^3.3.1",
     "vue": "^2.5.16",
     "vue-persist": "^0.4.0",
