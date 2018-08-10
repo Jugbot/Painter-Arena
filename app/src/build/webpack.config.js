@@ -64,16 +64,26 @@ module.exports = {
   context: resolve(__dirname, '../'),
   entry: {
     app: './main.js',
+    board: './drawingboard/drawingboard.js'
   },
   output: {
     filename: '[name].bundle.js',
     path: resolve(__dirname, '..', '..', './static/js'),
+  },
+  externals: {
+    vue: 'Vue',
+    jquery: 'jQuery'
+  },
+  optimization: {
+    // splitChunks: {
+    //   chunks: 'all'
+    // }
   },
   plugins: [
     new VueLoaderPlugin(),
     new MiniCssExtractPlugin({
       filename: '../css/style.css'
     }),
-    new webpack.HotModuleReplacementPlugin(),
+    //new webpack.HotModuleReplacementPlugin(),
   ]
 };
