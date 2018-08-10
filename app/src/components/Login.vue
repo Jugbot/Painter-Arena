@@ -119,16 +119,16 @@ export default {
       return this.valid_username() && this.valid_password()
     },
     user_exists() {
-      this.$http.get('api/u/' + this.$root.user.username, {'params': {'items':['entry',]}}).then(response => {
+      this.$http.get('api/u/' + this.$root.user.username, {'params': {'items':['avatar',]}}).then(response => {
         this.message = "Login";
         this.method = "get";
         this.btn_state = false;
-        this.$root.user.entry = response.body.entry;
+        this.$root.user.avatar = response.body.avatar;
       }, error => {
         this.message = "Register";
         this.method = 'post';
         this.btn_state = true;
-        this.$root.user.entry = false;
+        this.$root.user.avatar = false;
       });
     }
   },
