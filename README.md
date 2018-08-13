@@ -1,2 +1,4 @@
 # PainterArenaWebAPI
-A Full-Stack app with Flask (sqlalchemy ORM), Mysql, and Vue
+A Full-Stack app with Flask, Vue, socket-io, sqlalchemy ORM, Mysql, Bulma/Buefy, and other miscellaneous libraries.
+
+
