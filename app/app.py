@@ -9,5 +9,3 @@ app.config["WIPE"] = False
 jwt = JWT(app.config['SECRET_KEY'], expires_in=3600)
 socketio = SocketIO(app)
 
-
-

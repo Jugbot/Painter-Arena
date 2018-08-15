@@ -278,13 +278,14 @@ export default {
     this.$options.sockets.player_leave = this.player_leave;
     this.$options.sockets.entry_update = this.entry_update;
     this.$options.sockets.votes_changed = this.votes_changed;
-
+    this.$options.sockets.reconnect = this.update_players;
   },
   beforeDestroy() {
     delete this.$options.sockets.player_join;
     delete this.$options.sockets.player_leave;
     delete this.$options.sockets.entry_update;
     delete this.$options.sockets.votes_changed;
+    delete this.$options.sockets.reconnect;
   },
   mounted() {
     this.board = new DrawingBoard.Board('simple-board', {

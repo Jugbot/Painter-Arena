@@ -133,7 +133,7 @@ class Player(Resource):
         user = g.user if hasattr(g, 'user') else session.query(User).filter_by(username=name).first()
         authorized = g.authorized if hasattr(g, 'authorized') else False
         if not user:
-            return "No such user", BAD_REQUEST
+            return "No such user", UNAUTHORIZED
 
         payload = {'authorized': authorized}
         if authorized and request.args.get('token'):

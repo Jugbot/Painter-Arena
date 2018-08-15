@@ -101,13 +101,16 @@ class Arena(Base):
         a._close()
 
     def _finish_battle(self):
-        # Reflects skill level over the mean
         for user in self.players:
-            skillmult = math.erf(self.skill - user.skill) # error func _,- (-1.0 <-> 1.0) mean: 0.0
-            scoremult = 0
-            if user.votes_received != 0: # avoid zero division
-                scoremult = user.votes_received / (self.vote_count / self.max_players) # (0.0 <-> MAX_P) mean: 1.0
-            mult = (skillmult + 1) * (scoremult - 1) # mean: 0
+            # error func _,- (-1.0 <-> 1.0) mean: 0.0
+            skillmult = math.erf((self.skill - user.skill) / 100.0)
+            scoremult = 1
+            # avoid zero division
+            if user.votes_received != 0:
+                # (0.0 <-> MAX_P) mean: 1.0
+                scoremult = user.votes_received / (self.vote_count / self.max_players)
+            # mean: 0
+            mult = (skillmult + 1) * (scoremult - 1)
             skilldiff = int(mult * self.BASE_REWARD)
             user.skill += skilldiff
             notif = Notification(
@@ -123,6 +126,7 @@ class Arena(Base):
             user.votes_pouch = VOTES_PER_PLAYER
             user.votes_received = 0
             user.entry = False
+        session.commit()
 
     def _close(self):
         print('ending... ', self)
