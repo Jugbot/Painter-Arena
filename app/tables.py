@@ -23,7 +23,7 @@ session = scoped_session(Session)
 Base = declarative_base()
 
 scheduler = BackgroundScheduler()
-scheduler.add_jobstore('sqlalchemy', url='mysql://root:Minecraft700@localhost/store')
+scheduler.add_jobstore('sqlalchemy', url=app.config["DATABASE_URI"])
 atexit.register(lambda: scheduler.shutdown())
 scheduler.start()
 
