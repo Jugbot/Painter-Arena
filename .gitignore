@@ -2,3 +2,6 @@
 __pycache__/
 app/src/node_modules/
 app/dynamic/u
+app/static/css/style.css
+app/static/js/app.bundle.js
+app/static/js/board.bundle.js
