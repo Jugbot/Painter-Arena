@@ -1,4 +1,4 @@
-# Painter Arena
+# 🏰 Painter Arena 
 ### A Full-Stack app with Flask, Vue, socket-io, sqlalchemy ORM, Mysql, Bulma/Buefy, and other miscellaneous libraries.
 
 This is a Summer project that was meant to be a learning experience and a chance to try out modern web app building workflows.  
