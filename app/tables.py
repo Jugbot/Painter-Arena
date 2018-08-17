@@ -195,7 +195,7 @@ class User(Base):
         return self.skill
 
     def get_entry(self):
-        if self.avatar:
+        if self.entry:
             return self.get_dynamic_file_base64('entry')
 
     def get_avatar(self):
