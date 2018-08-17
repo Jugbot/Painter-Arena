@@ -1,5 +1,17 @@
 # Painter Arena
-A Full-Stack app with Flask, Vue, socket-io, sqlalchemy ORM, Mysql, Bulma/Buefy, and other miscellaneous libraries.
+### A Full-Stack app with Flask, Vue, socket-io, sqlalchemy ORM, Mysql, Bulma/Buefy, and other miscellaneous libraries.
+
+This is a Summer project that was meant to be a learning experience and a chance to try out modern web app building workflows.  
+This app was intended to be a game of doodling, hence the title. Players enter an "Arena" where a prompt is given. The players then have a set amount of time to complete their entry and then vote for other entries. When the time is up, a change in skill is calculated based on relative skill and votes which is then used in the matchmaker. You can make custom matches with custom prompts, players, and time limits. You can edit your own avatar as well. Actions in the Arena are broadcasted to other users in the Arena through socket-io so the app is somewhat realtime. The front end is built with bulma and fully responsive. 
+
+#### TODO:
+- [ ] Contributors.
+- [ ] Social features including joining the same arena as another user.
+- [ ] Joining multiple Arenas.
+- [ ] Custom undefined avatar for new users that fits the default drawing look.
+- [ ] Custom Vue enabled drawing board so as to drop jQuery dependency and customize further
+- [ ] Levelling, loot boxes, unlockable drawing tools, microtransactions. 
+- [ ] Publish.
 
 ## Getting Started
 Install dependencies at the `app/` folder
